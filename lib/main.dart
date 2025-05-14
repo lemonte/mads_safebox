@@ -24,7 +24,14 @@ class MyApp extends StatelessWidget {
       title: 'SafeBox',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        primaryColor: mainColor
+        primaryColor: mainColor,
+        cardColor: Colors.white,
+        popupMenuTheme: PopupMenuThemeData(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       home: const AuthWrapper(),

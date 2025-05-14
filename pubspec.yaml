@@ -41,6 +41,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   google_sign_in: ^6.2.2
   flutter_dotenv: ^5.2.1
+  file_picker: ^10.1.9
+  intl: ^0.20.2
 
 
 dev_dependencies:
