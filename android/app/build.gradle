@@ -8,15 +8,16 @@ plugins {
 android {
     namespace = "com.example.mads_safebox"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+//    ndkVersion = flutter.ndkVersion
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -42,3 +43,9 @@ android {
 flutter {
     source = "../.."
 }
+dependencies {
+    // Add the Facebook SDK dependency
+    implementation 'com.facebook.android:facebook-login:latest.release'
+    // Add the Facebook Login dependency
+}
+
