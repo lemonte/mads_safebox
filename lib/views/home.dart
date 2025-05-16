@@ -1,11 +1,7 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/global/colors.dart';
-import 'package:mads_safebox/riverpod/loggeduserprovider.dart';
 import 'package:mads_safebox/views/filePage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
 import 'package:mads_safebox/widgets/logoutbutton.dart';
@@ -13,7 +9,7 @@ import 'package:mads_safebox/widgets/logoutbutton.dart';
 import '../models/file.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
-import 'package:mads_safebox/global/colors.dart';
+
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
