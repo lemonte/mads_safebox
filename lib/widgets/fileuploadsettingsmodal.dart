@@ -18,12 +18,18 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
   FileService fileService = FileService();
   String? selectedCategory;
   DateTime? expiringDate;
+  bool isUploading = false;
   List<String> categories = ['Category 1', 'Category 2', 'Category 3'];//test categories
 
   Future<void> uploadFiles() async {
-    if (widget.selectedFiles.isNotEmpty) {
+    if (widget.selectedFiles.isNotEmpty && !isUploading) {
+      setState(() {
+        isUploading = true;
+      });
+
       try {
         await fileService.uploadFile(widget.selectedFiles, selectedCategory, expiringDate);
+
         if (context.mounted) {
           showCustomSnackBar(context, "Files uploaded successfully");
           Navigator.pop(context);
@@ -35,6 +41,9 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
         }
       }
       Navigator.pop(context);
+      setState(() {
+        isUploading = false;
+      });
     }
   }
 
