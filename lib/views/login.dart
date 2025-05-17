@@ -186,6 +186,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             } on Exception catch (e) {
                               print("Error: " + e.toString());
                               showCustomSnackBar(context, 'Error signing in with Google');
+                              setState(() {
+                                loading = false;
+                              });
                             }
                             setState(() {
                               loading = false;
@@ -210,6 +213,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             } on Exception catch (e) {
                               print("Error: " + e.toString());
                               showCustomSnackBar(context, 'Error signing in with Facebook');
+                              setState(() {
+                                loading = false;
+                              });
                             }
                             setState(() {
                               loading = false;

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mads_safebox/widgets/loading.dart';
 
 import '../services/file_service.dart';
 import 'custom_snack_bar.dart';
@@ -165,7 +166,7 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                ElevatedButton(
+                isUploading ? Loading() : ElevatedButton(
                   onPressed: () async {
                     await uploadFiles();
                   },

@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/global/colors.dart';
 import 'package:mads_safebox/views/filePage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
+import 'package:mads_safebox/widgets/loading.dart';
+import 'package:mads_safebox/widgets/logoutbutton.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 
 import '../models/file.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
+import '../widgets/openlinkmodal.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -168,9 +171,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
-            child: CircularProgressIndicator(
-              color: mainColor,
-            ),
+            child: Loading()
           );
         } else if (snapshot.hasError) {
           return const Center(child: Text("Error loading files."));
@@ -225,7 +226,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             );
 
                             Uint8List? file =
-                            await fileService.getFile(snapshot.data![i]);
+                            await fileService.getFile(snapshot.data![i].path);
 
                             print(snapshot.data![i].path);
 

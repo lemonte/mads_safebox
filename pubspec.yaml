@@ -43,6 +43,8 @@ dependencies:
   flutter_dotenv: ^5.2.1
   file_picker: ^10.1.9
   intl: ^0.20.2
+  encrypt: ^5.0.3
+  share_plus: ^11.0.0
   #pdfx: ^2.9.1
   syncfusion_flutter_pdfviewer: ^29.2.4
 

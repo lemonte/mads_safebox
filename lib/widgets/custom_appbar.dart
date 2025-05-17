@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../global/colors.dart';
 import '../views/uploadfiles.dart';
 import 'logoutbutton.dart';
+import 'openlinkmodal.dart';
 
 AppBar buildCustomAppBar(bool showBackOption) {
   return AppBar(
@@ -38,14 +39,20 @@ AppBar buildCustomAppBar(bool showBackOption) {
 
 List<PopupMenuEntry<dynamic>> buildWithoutBackOption(BuildContext context) {
         return [
-          const PopupMenuItem(
-            child: Row(
+          PopupMenuItem(
+            child: const Row(
               children: [
                 Icon(Icons.link, color: Colors.black),
                 SizedBox(width: 8),
                 Text("Open Link", style: TextStyle(color: Colors.black)),
               ],
             ),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => const OpenLinkModal(),
+              );
+            },
           ),
           PopupMenuItem(
             child: const Row(

@@ -49,12 +49,12 @@ class FileService {
     }
   }
 
-  Future<Uint8List?> getFile(FileSB fileSB) async {
+  Future<Uint8List?> getFile(String path) async {
 
     try {
       final Uint8List response = await supabaseClient.storage
           .from(authService.getCurrentUser().id)
-          .download(fileSB.path);
+          .download(path);
 
       print("File downloaded: ${response.lengthInBytes} bytes");
 
@@ -63,6 +63,15 @@ class FileService {
       print(e.toString());
       return null;
     }
+  }
+
+  Future<FileSB> getFileSB(int id) {
+    return supabaseClient
+        .from('files')
+        .select()
+        .eq('id', id)
+        .single()
+        .then((data) => FileSB.fromJson(data));
   }
 
   Stream<List<FileSB>?> getImageList() {
