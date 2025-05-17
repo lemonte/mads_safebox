@@ -13,6 +13,7 @@ import '../models/file.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
 import '../widgets/openlinkmodal.dart';
+import '../widgets/sharefilemodal.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -170,9 +171,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       stream: isShowingImages ? images : docs,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: Loading()
-          );
+          return Center(child: Loading());
         } else if (snapshot.hasError) {
           return const Center(child: Text("Error loading files."));
         } else {
@@ -198,7 +197,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   MaterialPageRoute(
                                     builder: (context) => FilePage(
                                         fileSB: snapshot.data![i],
-                                        file: downloadedFiles[snapshot.data![i].name]!),
+                                        file: downloadedFiles[
+                                            snapshot.data![i].name]!),
                                   ));
                               return;
                             }
@@ -227,8 +227,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                               },
                             );
 
-                            Uint8List? file =
-                            await fileService.getFile(snapshot.data![i].path);
+                            Uint8List? file = await fileService
+                                .getFile(snapshot.data![i].path);
 
                             print(snapshot.data![i].path);
 
@@ -457,7 +457,11 @@ class _HomePageState extends ConsumerState<HomePage> {
         ///Share File
         child: const Text("Share", style: TextStyle(color: Colors.black)),
         onTap: () {
-          ///Share
+          showDialog(
+              context: context,
+              builder: (context) {
+                return FileShareModal(fileSB: fileSB);
+              });
         },
       ),
     ];
