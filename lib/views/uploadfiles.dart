@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:mads_safebox/widgets/fileuploadsettingsmodal.dart';
 
-import '../global/colors.dart';
+
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
-import '../widgets/logoutbutton.dart';
+
 
 
 class UploadFilesPage extends StatefulWidget {
@@ -76,63 +77,7 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF003366),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.lock, color: Colors.orange, size: 20),
-            SizedBox(width: 6),
-            Text("SafeBoX", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-          ],
-        ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12.0),
-            child: LogoutButton(),
-          )
-        ],
-        leading: Padding(
-          padding: EdgeInsets.only(left: 12),
-          child: PopupMenuButton(
-            icon: Icon(Icons.menu, color: mainTextColor,),
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  child: Row(
-                    children: const [
-                      Icon(Icons.arrow_back, color: Colors.black),
-                      SizedBox(width: 8),
-                      Text("Back", style: TextStyle(color: Colors.black)),
-                    ],
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                PopupMenuItem(
-                  child: Row(
-                    children: const [
-                      Icon(Icons.link, color: Colors.black),
-                      SizedBox(width: 8),
-                      Text("Open Link", style: TextStyle(color: Colors.black)),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  child: Row(
-                    children: const [
-                      Icon(Icons.notifications_active, color: Colors.black),
-                      SizedBox(width: 8),
-                      Text("Notifications", style: TextStyle(color: Colors.black)),
-                    ],
-                  ),
-                ),
-              ];
-            },
-          ),
-        ),
-      ),
+      appBar: buildCustomAppBar(true),
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

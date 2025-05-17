@@ -65,37 +65,33 @@ class FileService {
     }
   }
 
-  Future<List<FileSB>?> getImageList() async {
-    List<FileSB> images = [];
-    try {
-      final List<Map<String, dynamic>> data = await supabaseClient.from('files').select().eq("uid", authService.getCurrentUser().id).likeAnyOf("extension", ["jpeg","jpg","png"]);
+  Stream<List<FileSB>?> getImageList() {
+    final userId = authService.getCurrentUser().id;
 
-      for(var file in data) {
-        images.add(FileSB.fromJson(file));
-      }
-
-      print("imagens:\n$data");
-    } catch (e) {
-      print(e.toString());
-    }
-
-    return images;
-
+    return supabaseClient
+        .from('files')
+        .stream(primaryKey: ['id']) // ajuste conforme sua tabela
+        .eq("uid", userId)
+        .order('created_at', ascending: false)
+        .map((data) => data
+        .where((file) => ["jpeg", "jpg", "png"]
+        .contains(file['extension']?.toLowerCase()))
+        .map<FileSB>((file) => FileSB.fromJson(file))
+        .toList());
   }
 
-  Future<List<FileSB>?> getDocList() async {
-    List<FileSB> docs = [];
-    try {
-      final List<Map<String, dynamic>> data = await supabaseClient.from('files').select().eq("uid", authService.getCurrentUser().id).eq("extension", "pdf");
+  Stream<List<FileSB>?> getDocList() {
+    final userId = authService.getCurrentUser().id;
 
-      for(var file in data) {
-        docs.add(FileSB.fromJson(file));
-      }
-
-      print("documentos:\n$data");
-    } catch (e) {
-      print(e.toString());
-    }
-    return docs;
+    return supabaseClient
+        .from('files')
+        .stream(primaryKey: ['id'])
+        .eq("uid", userId)
+        .order('created_at', ascending: false)
+        .map((data) => data
+        .where((file) => ["pdf"]
+        .contains(file['extension']?.toLowerCase()))
+        .map<FileSB>((file) => FileSB.fromJson(file))
+        .toList());
   }
 }

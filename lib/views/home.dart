@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/global/colors.dart';
 import 'package:mads_safebox/views/filePage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
-import 'package:mads_safebox/widgets/logoutbutton.dart';
+import 'package:mads_safebox/widgets/custom_appbar.dart';
+import 'package:mads_safebox/widgets/loading.dart';
 
 import '../models/file.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
-
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -22,8 +22,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   FileService fileService = FileService();
   bool isShowingImages = true;
 
-  late Future<List<FileSB>?> images;
-  late Future<List<FileSB>?> docs;
+  Map<String, Uint8List> downloadedFiles = {};
+
+  late Stream<List<FileSB>?> images;
+  late Stream<List<FileSB>?> docs;
 
   @override
   void initState() {
@@ -35,73 +37,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF003366),
-        title: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.lock, color: Colors.orange, size: 20),
-            SizedBox(width: 6),
-            Text("SafeBoX",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, color: Colors.white)),
-          ],
-        ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12.0),
-            child: LogoutButton(),
-          )
-        ],
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: PopupMenuButton(
-            icon: Icon(
-              Icons.menu,
-              color: mainTextColor,
-            ),
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem(
-                  child: Row(
-                    children: [
-                      Icon(Icons.link, color: Colors.black),
-                      SizedBox(width: 8),
-                      Text("Open Link", style: TextStyle(color: Colors.black)),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  child: const Row(
-                    children: [
-                      Icon(Icons.add_box, color: Colors.black),
-                      SizedBox(width: 8),
-                      Text("Add File", style: TextStyle(color: Colors.black)),
-                    ],
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UploadFilesPage(),
-                        ));
-                  },
-                ),
-                const PopupMenuItem(
-                  child: Row(
-                    children: [
-                      Icon(Icons.notifications_active, color: Colors.black),
-                      SizedBox(width: 8),
-                      Text("Notifications",
-                          style: TextStyle(color: Colors.black)),
-                    ],
-                  ),
-                ),
-              ];
-            },
-          ),
-        ),
-      ),
+      appBar: buildCustomAppBar(false),
       backgroundColor: Colors.white,
       body: Column(
         children: [
@@ -226,17 +162,16 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  FutureBuilder<List<FileSB>?> buildFileList() {
-    return FutureBuilder<List<FileSB>?>(
-      future: isShowingImages
-          ? images
-          : docs, //TODO : meter os docs (ver se da com o isShowingImage ? images : docs
+  StreamBuilder<List<FileSB>?> buildFileList() {
+    return StreamBuilder<List<FileSB>?>(
+      stream: isShowingImages ? images : docs,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
-              child: CircularProgressIndicator(
-            color: mainColor,
-          ));
+            child: CircularProgressIndicator(
+              color: mainColor,
+            ),
+          );
         } else if (snapshot.hasError) {
           return const Center(child: Text("Error loading files."));
         } else {
@@ -246,72 +181,98 @@ class _HomePageState extends ConsumerState<HomePage> {
           return ListView(
             children: [
               for (int i = 0; i < snapshot.data!.length; i++)
-                Container(
-                  //decoration: BoxDecoration(
-                  //border: Border.all(color: Globals.borderColor, width: 1),
-                  //color: getSeverityColor(snapshot.data![i].severity),
-                  //),
-                  child: ListTile(
-                    onTap: () async {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return Center(
-                            child: Column(
-                              children: [
-                                const Text("Downloading File"),
-                                const SizedBox(height: 8),
-                                CircularProgressIndicator(color: mainColor),
-                              ],
-                            ),
-                          );
-                        },
-                      );
+                ListTile(
+                  //TODO: implementar o menu (mudar o on tap para a row do icon e imagem)
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: GestureDetector(
+                          onTap: () async {
+                            if (downloadedFiles.containsKey(snapshot.data![i].name)) {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FilePage(
+                                        fileSB: snapshot.data![i],
+                                        file: downloadedFiles[snapshot.data![i].name]!),
+                                  ));
+                              return;
+                            }
 
-                      Uint8List? file = await fileService.getFile(snapshot.data![i]);
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return Dialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text("Downloading File"),
+                                        SizedBox(height: 8),
+                                        Loading(),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
 
-                      print(snapshot.data![i].path);
+                            Uint8List? file =
+                            await fileService.getFile(snapshot.data![i]);
 
-                      if (context.mounted) {
-                        Navigator.pop(context);
+                            print(snapshot.data![i].path);
 
-                        if (file == null) {
-                          showCustomSnackBar(
-                              context, 'Could not download the file');
-                          return;
-                        }
+                            if (context.mounted) {
+                              Navigator.pop(context);
 
+                              if (file == null) {
+                                showCustomSnackBar(
+                                    context, 'Could not download the file');
+                                return;
+                              }
 
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FilePage(
-                                  fileSB: snapshot.data![i], file: file),
-                            ));
-                      }
-                    },
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child:
-                              Icon(Icons.image), //TODO : Colocar aqui a imagem
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            snapshot.data![i].name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                              downloadedFiles[snapshot.data![i].name] = file;
+
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        FilePage(fileSB: snapshot.data![i], file: file),
+                                  ));
+                            }
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                flex: 1,
+                                child: Icon(Icons
+                                    .image), //TODO : Colocar aqui a miniatura da imagem
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  snapshot.data![i].name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Expanded(
-                          flex: 1,
-                          child: Icon(Icons.menu),
-                        )
-                      ],
-                    ),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: Icon(Icons.menu),
+                      )
+                    ],
                   ),
                 ),
             ],
