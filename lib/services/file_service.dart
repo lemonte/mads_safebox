@@ -49,6 +49,33 @@ class FileService {
     }
   }
 
+  Future<bool> deleteFile(FileSB fileSB) async {
+    try {
+      await supabaseClient.storage.from(authService.getCurrentUser().id).remove([fileSB.path]);
+      await supabaseClient.from('files').delete().eq("id", fileSB.id);
+      return true;
+    } catch (e) {
+      print("\nError when deleting file:\n$e\n");
+      return false;
+    }
+  }
+
+
+  Future<bool> renameFile(FileSB fileSB, String name) async {
+    try {
+      
+      String newPath = fileSB.path.substring(0, fileSB.path.length - fileSB.name.length) + name;
+      await supabaseClient.storage.from(authService.getCurrentUser().id).copy(fileSB.path, newPath);
+      await supabaseClient.storage.from(authService.getCurrentUser().id).remove([fileSB.path]);
+      await supabaseClient.from('files').update({"name": name, "path": newPath}).eq("id", fileSB.id);
+      return true;
+    } catch (e) {
+      print("\nError when renaming file:\n$e\n");
+      return false;
+    }
+  }
+
+
   Future<Uint8List?> getFile(FileSB fileSB) async {
 
     try {
