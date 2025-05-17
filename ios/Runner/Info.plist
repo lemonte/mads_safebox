@@ -38,6 +38,12 @@
     			<string>com.googleusercontent.apps.290328879076-qutfr94qe2f4kvql8dhvn39dvigr7lpm</string>
     		</array>
     	</dict>
+    	<dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+              <string>safebox</string> <!-- ou outro esquema -->
+            </array>
+          </dict>
     </array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>

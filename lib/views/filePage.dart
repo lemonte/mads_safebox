@@ -6,6 +6,8 @@ import '../global/colors.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_appbar.dart';
 import '../models/file.dart';
+import '../widgets/openlinkmodal.dart';
+import '../widgets/sharefilemodal.dart';
 
 class FilePage extends StatefulWidget {
   final FileSB fileSB;
@@ -40,7 +42,6 @@ class _FilePageState extends State<FilePage> {
         ),
       );
     }
-    //TODO: meter o pdf viewer
     return Expanded(
       child: Center(
         child: SfPdfViewer.memory(widget.file),
@@ -57,27 +58,37 @@ class _FilePageState extends State<FilePage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           children: [
-            const Text("Your File",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Container(width: 40,),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      "Your File",
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 40,
+                  child: IconButton(
+                    onPressed: (){
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return FileShareModal(fileSB: widget.fileSB);
+                        }
+                      );
+                    },
+                    icon: Icon(Icons.share, color: mainColor)
+                  ),
+                )
+              ],
+            ),
             Divider(thickness: 1, color: Colors.grey.shade300),
             const SizedBox(height: 8),
             buildFileView(),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {}, //TODO: function to share the file
-              style: ElevatedButton.styleFrom(
-                backgroundColor: mainColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              child: Text(
-                "Share this file",
-                style: TextStyle(color: mainTextColor),
-              ),
-            ),
           ],
         ),
       ),

@@ -63,7 +63,7 @@ class FileService {
 
   Future<bool> renameFile(FileSB fileSB, String name) async {
     try {
-      
+
       String newPath = fileSB.path.substring(0, fileSB.path.length - fileSB.name.length) + name;
       await supabaseClient.storage.from(authService.getCurrentUser().id).copy(fileSB.path, newPath);
       await supabaseClient.storage.from(authService.getCurrentUser().id).remove([fileSB.path]);
@@ -75,13 +75,12 @@ class FileService {
     }
   }
 
-
-  Future<Uint8List?> getFile(FileSB fileSB) async {
+  Future<Uint8List?> getFile(String path) async {
 
     try {
       final Uint8List response = await supabaseClient.storage
           .from(authService.getCurrentUser().id)
-          .download(fileSB.path);
+          .download(path);
 
       print("File downloaded: ${response.lengthInBytes} bytes");
 
@@ -90,6 +89,15 @@ class FileService {
       print(e.toString());
       return null;
     }
+  }
+
+  Future<FileSB> getFileSB(int id) {
+    return supabaseClient
+        .from('files')
+        .select()
+        .eq('id', id)
+        .single()
+        .then((data) => FileSB.fromJson(data));
   }
 
   Stream<List<FileSB>?> getImageList() {
