@@ -5,14 +5,11 @@ import 'package:mads_safebox/global/colors.dart';
 import 'package:mads_safebox/views/filePage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
 import 'package:mads_safebox/widgets/loading.dart';
-import 'package:mads_safebox/widgets/logoutbutton.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
-import 'package:mads_safebox/widgets/loading.dart';
 
 import '../models/file.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
-import '../widgets/openlinkmodal.dart';
 import '../widgets/sharefilemodal.dart';
 
 class HomePage extends ConsumerStatefulWidget {
