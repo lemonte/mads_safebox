@@ -68,6 +68,7 @@ class FileService {
       await supabaseClient.storage.from(authService.getCurrentUser().id).copy(fileSB.path, newPath);
       await supabaseClient.storage.from(authService.getCurrentUser().id).remove([fileSB.path]);
       await supabaseClient.from('files').update({"name": name, "path": newPath}).eq("id", fileSB.id);
+      await supabaseClient.from('shared').update({ "path": newPath}).eq("file_id", fileSB.id);
       return true;
     } catch (e) {
       print("\nError when renaming file:\n$e\n");
@@ -80,6 +81,22 @@ class FileService {
     try {
       final Uint8List response = await supabaseClient.storage
           .from(authService.getCurrentUser().id)
+          .download(path);
+
+      print("File downloaded: ${response.lengthInBytes} bytes");
+
+      return response;
+    } catch (e) {
+      print(e.toString());
+      return null;
+    }
+  }
+
+  Future<Uint8List?> getSharedFile(String path, String uid) async {
+
+    try {
+      final Uint8List response = await supabaseClient.storage
+          .from(uid)
           .download(path);
 
       print("File downloaded: ${response.lengthInBytes} bytes");

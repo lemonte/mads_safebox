@@ -79,7 +79,7 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
 
       SharedSB? response = await shareFilesService.getSharedFileFromLink(fileId, expireDate, role, password);
       if(response == null){
-        showCustomSnackBar(context, 'File not found');
+        showCustomSnackBar(context, 'File not found or incorrect password');
         setState(() {
           loading = false;
         });
@@ -88,7 +88,7 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
 
       FileSB fileSB = await fileService.getFileSB(response.fileId);
 
-      Uint8List? file = await fileService.getFile(response.path);
+      Uint8List? file = await fileService.getSharedFile(response.path, response.uid);
 
       if(file == null){
         showCustomSnackBar(context, 'File not found');
@@ -109,7 +109,11 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
       });
 
     } on Exception catch (e) {
-      showCustomSnackBar(context, 'Error opening file');
+      if(e.toString().contains('Autorization expired')){
+        showCustomSnackBar(context, 'Autorization expired');
+      } else {
+        showCustomSnackBar(context, 'Error decrypting link');
+      }
       setState(() {
         loading = false;
       });

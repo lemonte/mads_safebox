@@ -33,7 +33,10 @@ class ShareFilesService {
   }
 
   Future<SharedSB?> getSharedFileFromLink(int fileId, DateTime date, String role, String password) async {
-
+    if(date.isBefore(DateTime.now())) {
+      print('Error: Autorization expired.');
+      throw Exception('Autorization expired');
+    }
     role = role.substring(0,1).toUpperCase() + role.substring(1).toLowerCase();
     try {
       final response = await Supabase.instance.client
