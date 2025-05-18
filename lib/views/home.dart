@@ -35,6 +35,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     docs = fileService.getDocList();
   }
 
+  TextEditingController renameController = TextEditingController();
+
+  @override
+  void dispose() {
+    renameController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -369,9 +377,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       PopupMenuItem(
         child: const Text("Rename", style: TextStyle(color: Colors.black)),
         onTap: () {
-          TextEditingController renameController = TextEditingController(
-              text: fileSB.name.substring(
-                  0, fileSB.name.length - fileSB.extension.length - 1));
+          renameController.text = fileSB.name.substring(0, fileSB.name.length - fileSB.extension.length - 1);
 
           showDialog(
               context: context,
@@ -446,7 +452,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 );
               }).whenComplete(() {
-            renameController.dispose();
+            //renameController.dispose();
           });
         },
       ),
