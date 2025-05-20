@@ -8,7 +8,7 @@ void showCustomSnackBar(BuildContext context, String text) {
     content: Container(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
       decoration: BoxDecoration(
-        color: mainColor,
+        color: snackBarColor,
         borderRadius: BorderRadius.circular(30.0),
       ),
       child: Text(

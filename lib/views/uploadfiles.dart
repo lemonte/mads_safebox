@@ -136,11 +136,11 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
                       return;
                     }
                     showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
+                        context: context,
+                        builder: (BuildContext context) {
 
-                        return FileUploadSettingsModal(selectedFiles: selectedFiles);
-                      }
+                          return FileUploadSettingsModal(selectedFiles: selectedFiles);
+                        }
                     );
                   },
                   style: ElevatedButton.styleFrom(

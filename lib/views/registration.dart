@@ -145,10 +145,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           showCustomSnackBar(context, 'Error creating account');
                         }
                         loading = false;
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
-                        );
+                        Navigator.of(context).pop();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: mainColor,

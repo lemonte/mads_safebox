@@ -6,6 +6,7 @@ class FileSB {
    String extension;
    int size;
    String path;
+   int categoryId;
 
    FileSB({
       required this.id,
@@ -15,6 +16,7 @@ class FileSB {
       required this.extension,
       required this.size,
       required this.path,
+      required this.categoryId
    });
 
    Map<String, dynamic> toJson() {
@@ -26,6 +28,7 @@ class FileSB {
          'extension': extension,
          'size': size,
          'path': path,
+         'category_id': categoryId,
       };
    }
 
@@ -38,6 +41,7 @@ class FileSB {
          extension: json['extension'] as String,
          size: json['size'] as int,
          path: json['path'] as String,
+         categoryId: json['category_id'] as int,
       );
    }
 }

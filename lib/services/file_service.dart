@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:mads_safebox/models/category.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,7 +14,7 @@ class FileService {
   final AuthService authService = AuthService();
 
   Future<void> uploadFile(
-      List<File> file, String? selectedCategory, DateTime? expiringDate) async {
+      List<File> file, int? selectedCategoryId, DateTime? expiringDate) async {
     try {
       await supabaseClient.storage
           .createBucket(authService.getCurrentUser().id);
@@ -42,6 +43,7 @@ class FileService {
           'extension': file.path.split('.').last,
           'size': file.lengthSync(),
           'path': uploadPath,
+          'category_id': selectedCategoryId,
         });
       } catch (e) {
         print('Error uploading file: $e');
@@ -51,7 +53,9 @@ class FileService {
 
   Future<bool> deleteFile(FileSB fileSB) async {
     try {
-      await supabaseClient.storage.from(authService.getCurrentUser().id).remove([fileSB.path]);
+      await supabaseClient.storage
+          .from(authService.getCurrentUser().id)
+          .remove([fileSB.path]);
       await supabaseClient.from('files').delete().eq("id", fileSB.id);
       return true;
     } catch (e) {
@@ -60,15 +64,23 @@ class FileService {
     }
   }
 
-
   Future<bool> renameFile(FileSB fileSB, String name) async {
     try {
-
-      String newPath = fileSB.path.substring(0, fileSB.path.length - fileSB.name.length) + name;
-      await supabaseClient.storage.from(authService.getCurrentUser().id).copy(fileSB.path, newPath);
-      await supabaseClient.storage.from(authService.getCurrentUser().id).remove([fileSB.path]);
-      await supabaseClient.from('files').update({"name": name, "path": newPath}).eq("id", fileSB.id);
-      await supabaseClient.from('shared').update({ "path": newPath}).eq("file_id", fileSB.id);
+      String newPath =
+          fileSB.path.substring(0, fileSB.path.length - fileSB.name.length) +
+              name;
+      await supabaseClient.storage
+          .from(authService.getCurrentUser().id)
+          .copy(fileSB.path, newPath);
+      await supabaseClient.storage
+          .from(authService.getCurrentUser().id)
+          .remove([fileSB.path]);
+      await supabaseClient
+          .from('files')
+          .update({"name": name, "path": newPath}).eq("id", fileSB.id);
+      await supabaseClient
+          .from('shared')
+          .update({"path": newPath}).eq("file_id", fileSB.id);
       return true;
     } catch (e) {
       print("\nError when renaming file:\n$e\n");
@@ -77,11 +89,10 @@ class FileService {
   }
 
   Future<Uint8List?> getFile(String path) async {
-
     try {
       final Uint8List response = await supabaseClient.storage
           .from(authService.getCurrentUser().id)
-          .download(path);
+          .download(path, transform: TransformOptions());
 
       print("File downloaded: ${response.lengthInBytes} bytes");
 
@@ -93,11 +104,9 @@ class FileService {
   }
 
   Future<Uint8List?> getSharedFile(String path, String uid) async {
-
     try {
-      final Uint8List response = await supabaseClient.storage
-          .from(uid)
-          .download(path);
+      final Uint8List response =
+          await supabaseClient.storage.from(uid).download(path);
 
       print("File downloaded: ${response.lengthInBytes} bytes");
 
@@ -122,14 +131,14 @@ class FileService {
 
     return supabaseClient
         .from('files')
-        .stream(primaryKey: ['id']) // ajuste conforme sua tabela
+        .stream(primaryKey: ['id'])
         .eq("uid", userId)
         .order('created_at', ascending: false)
         .map((data) => data
-        .where((file) => ["jpeg", "jpg", "png"]
-        .contains(file['extension']?.toLowerCase()))
-        .map<FileSB>((file) => FileSB.fromJson(file))
-        .toList());
+            .where((file) => ["jpeg", "jpg", "png"]
+                .contains(file['extension']?.toLowerCase()))
+            .map<FileSB>((file) => FileSB.fromJson(file))
+            .toList());
   }
 
   Stream<List<FileSB>?> getDocList() {
@@ -141,9 +150,23 @@ class FileService {
         .eq("uid", userId)
         .order('created_at', ascending: false)
         .map((data) => data
-        .where((file) => ["pdf"]
-        .contains(file['extension']?.toLowerCase()))
-        .map<FileSB>((file) => FileSB.fromJson(file))
-        .toList());
+            .where((file) => ["pdf"].contains(file['extension']?.toLowerCase()))
+            .map<FileSB>((file) => FileSB.fromJson(file))
+            .toList());
+  }
+
+  Future<bool> changeFilesCategory(int idOrigin, int idDestination) async {
+    try {
+      await supabaseClient
+          .from('files')
+          .update({'category_id': idDestination})
+          .eq('uid', authService.getCurrentUser().id)
+          .eq('category_id', idOrigin);
+
+      return true;
+    } catch (e) {
+      print(e.toString());
+      return false;
+    }
   }
 }
