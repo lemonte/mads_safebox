@@ -31,7 +31,8 @@ AppBar buildCustomAppBar(bool showBackOption) {
           Icons.menu,
           color: mainTextColor,
         ),
-        itemBuilder: showBackOption ? buildWithBackOption : buildWithoutBackOption,
+        itemBuilder: (context) =>
+        showBackOption ? buildWithBackOption(context) : buildWithoutBackOption(context),
       ),
     ),
   );
@@ -64,10 +65,11 @@ List<PopupMenuEntry<dynamic>> buildWithoutBackOption(BuildContext context) {
             ),
             onTap: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UploadFilesPage(),
-                  ));
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UploadFilesPage(),
+                )
+              );
             },
           ),
           const PopupMenuItem(
@@ -97,14 +99,20 @@ List<PopupMenuEntry<dynamic>> buildWithBackOption(BuildContext context) {
         Navigator.pop(context);
       },
     ),
-    const PopupMenuItem(
-      child: Row(
+    PopupMenuItem(
+      child: const Row(
         children: [
           Icon(Icons.link, color: Colors.black),
           SizedBox(width: 8),
           Text("Open Link", style: TextStyle(color: Colors.black)),
         ],
       ),
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => const OpenLinkModal(),
+        );
+      },
     ),
     const PopupMenuItem(
       child: Row(

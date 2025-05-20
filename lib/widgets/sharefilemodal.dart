@@ -72,6 +72,7 @@ class _FileShareModalState extends State<FileShareModal> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
+      backgroundColor: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(

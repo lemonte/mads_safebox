@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mads_safebox/models/shared.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../global/colors.dart';
@@ -11,10 +12,11 @@ import '../widgets/sharefilemodal.dart';
 
 class FilePage extends StatefulWidget {
   final FileSB fileSB;
+  final SharedSB? sharedSB;
 
   ///tou a passar o fileSB porque pode ser preciso para fazer a partilha (remover se nao for)
   final Uint8List file;
-  FilePage({super.key, required this.fileSB, required this.file});
+  FilePage({super.key, required this.fileSB, required this.file, this.sharedSB} );
 
   @override
   State<FilePage> createState() => _FilePageState();

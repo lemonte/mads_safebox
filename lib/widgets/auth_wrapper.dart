@@ -21,13 +21,6 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
 
   final AuthService auth = AuthService();
 
-  Future<void> _initializeUser() async {
-    UserSB? user = ref.watch(userProvider);
-    if (user == null) {
-      ref.read(userProvider.notifier).state = auth.getCurrentUser();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
