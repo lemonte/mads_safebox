@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:mads_safebox/models/shared&file.dart';
 import 'package:mads_safebox/models/category.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -167,6 +168,25 @@ class FileService {
     } catch (e) {
       print(e.toString());
       return false;
+    }
+  }
+
+  Future<List<SharedFileSB>> getSharedFiles(List<SharedFileSB> sharedFiles) async {
+    try {
+      for (var sharedFile in sharedFiles) {
+        final response = await supabaseClient
+            .from('files')
+            .select()
+            .eq('id', sharedFile.sharedSB.fileId)
+            .single();
+
+        sharedFile.fileSB = FileSB.fromJson(response);
+      }
+
+      return sharedFiles;
+    } catch (e) {
+      print('Error fetching shared files: $e');
+      return [];
     }
   }
 }

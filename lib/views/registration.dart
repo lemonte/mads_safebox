@@ -110,7 +110,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     SizedBox(height: 15),
                     TextFormField(
                       controller: emailController,
-                      validator: (val) => validateEmail(email: val),
+                      validator: (val) => validateEmail(email: val!.trim()),
                       decoration: InputDecoration(
                         hintText: 'Email',
                         filled: true,
@@ -121,7 +121,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     SizedBox(height: 15),
                     TextFormField(
                       controller: passwordController,
-                      validator: (val) => val!.length < 6 ? 'Password must have at least 6 characters' : null,
+                      validator: (val) => val!.trim().length < 6 ? 'Password must have at least 6 characters' : null,
                       obscureText: true,
                       decoration: InputDecoration(
                         hintText: 'Password',

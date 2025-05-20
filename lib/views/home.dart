@@ -5,6 +5,7 @@ import 'package:mads_safebox/global/colors.dart';
 import 'package:mads_safebox/global/default_category.dart';
 import 'package:mads_safebox/services/category_service.dart';
 import 'package:mads_safebox/views/filePage.dart';
+import 'package:mads_safebox/views/sharedfilespage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
 import 'package:mads_safebox/widgets/category/category_create_modal.dart';
 import 'package:mads_safebox/widgets/category/category_delete_modal.dart';
@@ -231,7 +232,13 @@ class _HomePageState extends ConsumerState<HomePage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SharedFilesPage(),
+                    ));
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: mainColor,
                 padding: const EdgeInsets.symmetric(

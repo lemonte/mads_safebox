@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-        ),
+        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
       ),
       debugShowCheckedModeBanner: false,
       home: const AuthWrapper(),

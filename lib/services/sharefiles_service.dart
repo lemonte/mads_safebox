@@ -1,6 +1,9 @@
 import 'package:intl/intl.dart';
+import 'package:mads_safebox/models/file.dart';
 import 'package:mads_safebox/models/shared.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../models/shared&file.dart';
 
 class ShareFilesService {
 
@@ -69,6 +72,33 @@ class ShareFilesService {
     } catch (e) {
       print('Error fetching shared files: $e');
       return null;
+    }
+  }
+
+  Future<List<SharedFileSB>> getSharedFiles() async {
+
+    try {
+      final response = await Supabase.instance.client
+          .from('shared')
+          .select()
+          .contains('sharedWith', [Supabase.instance.client.auth.currentUser!.id])
+          .gte('expire_date', DateFormat('yyyy-MM-dd').format(DateTime.now()));
+      final List<SharedSB> sharedList = (response)
+          .map((item) => SharedSB.fromJson(item))
+          .toList();
+
+      List<SharedFileSB> sharedFiles = sharedList.map(
+        (shared) {
+          return SharedFileSB(
+            sharedSB: shared,
+          );
+        },
+      ).toList();
+
+      return sharedFiles;
+    } catch (e) {
+      print('Error fetching shared files: $e');
+      throw Exception('Error fetching shared files');
     }
   }
 
