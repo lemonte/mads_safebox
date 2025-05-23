@@ -93,7 +93,7 @@ class FileService {
     try {
       final Uint8List response = await supabaseClient.storage
           .from(authService.getCurrentUser().id)
-          .download(path, transform: TransformOptions());
+          .download(path);//todo removi o transform porque dava erro com os pdfs
 
       print("File downloaded: ${response.lengthInBytes} bytes");
 

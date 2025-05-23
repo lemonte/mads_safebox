@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/global/colors.dart';
 import 'package:mads_safebox/global/default_category.dart';
@@ -11,9 +14,11 @@ import 'package:mads_safebox/widgets/category/category_create_modal.dart';
 import 'package:mads_safebox/widgets/category/category_delete_modal.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
-
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/category.dart';
 import '../models/file.dart';
+import '../services/auth_service.dart';
 import '../services/file_service.dart';
 import '../widgets/category/category_dropdownbutton.dart';
 import '../widgets/category/category_rename_modal.dart';
@@ -40,6 +45,82 @@ class _HomePageState extends ConsumerState<HomePage> {
   late Future<List<CategorySB>> categories;
 
   CategorySB selectedCategory = defaultCategory;
+
+  Future<bool> requestStoragePermission() async {
+    if (await Permission.storage.request().isGranted) {
+      return true;
+    }
+    return false;
+  }
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+
+  Future<void> downloadFile(FileSB fileSB, bool notifications) async {
+    try {
+      AuthService authService = AuthService();
+
+      Directory? directory;
+      // directory = await getApplicationDocumentsDirectory();
+      // print("directory: $directory");
+      directory = await getDownloadsDirectory();
+      print("download directory: $directory");
+      // directory = await getExternalStorageDirectory();
+      // print("external directory: $directory");
+
+      final userId = authService.getCurrentUser().id;
+      final targetDirPath = "${directory!.path}/$userId/${fileSB.path.split("/").first}";
+      print("targetDirPath: $targetDirPath");
+      final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
+      print("fileFullPath: $fileFullPath");
+
+      await Directory(targetDirPath).create(recursive: true);
+      final filePath = fileFullPath;
+      final file = File(filePath);
+
+      if (await file.exists()) {
+        notifications ? showCustomSnackBar(context, "O arquivo '${fileSB.name}' já existe.") : null;
+        return;
+      }
+
+      bool permissionGranted = await requestStoragePermission();
+
+      if (directory == null) throw Exception("Failed to get directory");
+
+      if(!downloadedFiles.containsKey(fileSB.name)){
+        Uint8List? file = await fileService.getFile(fileSB.path);
+        downloadedFiles[fileSB.name] = file!;
+      }
+
+      await file.writeAsBytes(downloadedFiles[fileSB.name]!);
+      print("File downloaded to: ${file.path}");
+
+      if(notifications) {
+        // Mostra notificação de download
+        await Permission.notification.request().isGranted ? await flutterLocalNotificationsPlugin.show(
+          0,
+          'Download concluído',
+          fileSB.name,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'download_channel',
+              'Downloads',
+              importance: Importance.high,
+              priority: Priority.high,
+              playSound: true,
+              icon: '@mipmap/ic_launcher',
+            ),
+          ),
+          payload: filePath,
+        ) : null;
+      }
+
+      notifications ? showCustomSnackBar(context, "File downloaded") : null;
+    } catch (e) {
+      print("Error downloading file: $e");
+      notifications ? showCustomSnackBar(context, "Error downloading file") : null;
+    }
+  }
 
   @override
   void initState() {
@@ -617,6 +698,12 @@ class _HomePageState extends ConsumerState<HomePage> {
               builder: (context) {
                 return FileShareModal(fileSB: fileSB);
               });
+        },
+      ),
+      PopupMenuItem(
+        child: const Text("Download", style: TextStyle(color: Colors.black)),
+        onTap: () async {
+          await downloadFile(fileSB, true);
         },
       ),
     ];
