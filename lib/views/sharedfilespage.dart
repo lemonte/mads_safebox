@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:mads_safebox/global/colors.dart';
@@ -9,9 +12,12 @@ import 'package:mads_safebox/views/filePage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/file.dart';
 import '../models/shared.dart';
+import '../services/auth_service.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
 import '../widgets/sharefilemodal.dart';
@@ -37,6 +43,82 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
   Future<List<SharedFileSB>> getSharedFiles() async {
     List<SharedFileSB> sharedFiles = await shareFilesService.getSharedFiles();
     return await fileService.getSharedFiles(sharedFiles);
+  }
+
+  Future<bool> requestStoragePermission() async {
+    if (await Permission.storage.request().isGranted) {
+      return true;
+    }
+    return false;
+  }
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+
+  Future<void> downloadFile(FileSB fileSB, bool notifications) async {
+    try {
+      AuthService authService = AuthService();
+
+      Directory? directory;
+      // directory = await getApplicationDocumentsDirectory();
+      // print("directory: $directory");
+      directory = await getDownloadsDirectory();
+      print("download directory: $directory");
+      // directory = await getExternalStorageDirectory();
+      // print("external directory: $directory");
+
+      final userId = authService.getCurrentUser().id;
+      final targetDirPath = "${directory!.path}/$userId/${fileSB.path.split("/").first}";
+      print("targetDirPath: $targetDirPath");
+      final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
+      print("fileFullPath: $fileFullPath");
+
+      await Directory(targetDirPath).create(recursive: true);
+      final filePath = fileFullPath;
+      final file = File(filePath);
+
+      if (await file.exists()) {
+        notifications ? showCustomSnackBar(context, "O arquivo '${fileSB.name}' já existe.") : null;
+        return;
+      }
+
+      bool permissionGranted = await requestStoragePermission();
+
+      if (directory == null) throw Exception("Failed to get directory");
+
+      if(!downloadedFiles.containsKey(fileSB.name)){
+        Uint8List? file = await fileService.getFile(fileSB.path);
+        downloadedFiles[fileSB.name] = file!;
+      }
+
+      await file.writeAsBytes(downloadedFiles[fileSB.name]!);
+      print("File downloaded to: ${file.path}");
+
+      if(notifications) {
+        // Mostra notificação de download
+        await Permission.notification.request().isGranted ? await flutterLocalNotificationsPlugin.show(
+          0,
+          'Download concluído',
+          fileSB.name,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'download_channel',
+              'Downloads',
+              importance: Importance.high,
+              priority: Priority.high,
+              playSound: true,
+              icon: '@mipmap/ic_launcher',
+            ),
+          ),
+          payload: filePath,
+        ) : null;
+      }
+
+      notifications ? showCustomSnackBar(context, "File downloaded") : null;
+    } catch (e) {
+      print("Error downloading file: $e");
+      notifications ? showCustomSnackBar(context, "Error downloading file") : null;
+    }
   }
 
   @override
@@ -255,18 +337,18 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                           ),
                         ),
                       ),
-                      // Expanded( //todo fazer com as permissões
-                      //   flex: 1,
-                      //   child: PopupMenuButton(
-                      //     icon: const Icon(
-                      //       Icons.menu,
-                      //       color: Colors.black,
-                      //     ),
-                      //     itemBuilder: (BuildContext context) {
-                      //       return getButtonList(snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
-                      //     },
-                      //   ),
-                      // )
+                      Expanded( //todo fazer com as permissões
+                        flex: 1,
+                        child: PopupMenuButton(
+                          icon: const Icon(
+                            Icons.menu,
+                            color: Colors.black,
+                          ),
+                          itemBuilder: (BuildContext context) {
+                            return getButtonList(snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
+                          },
+                        ),
+                      )
                     ],
                   ),
                 ),
@@ -279,171 +361,177 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
 
   List<PopupMenuItem> getButtonList(FileSB fileSB, SharedSB sharedSB) {
     return [
+      // PopupMenuItem(
+      //   child: const Text("Delete", style: TextStyle(color: Colors.black)),
+      //   onTap: () {
+      //     showDialog(
+      //         context: context,
+      //         builder: (context) {
+      //           return Dialog(
+      //             shape: RoundedRectangleBorder(
+      //               borderRadius: BorderRadius.circular(12),
+      //             ),
+      //             child: Padding(
+      //               padding: const EdgeInsets.all(16.0),
+      //               child: Column(
+      //                 mainAxisAlignment: MainAxisAlignment.center,
+      //                 mainAxisSize: MainAxisSize.min,
+      //                 children: [
+      //                   const Text(
+      //                       "Are you sure you want to delete this file?"),
+      //                   const SizedBox(height: 8),
+      //                   Row(
+      //                     mainAxisAlignment: MainAxisAlignment.end,
+      //                     children: [
+      //                       ElevatedButton(
+      //                         onPressed: () async {
+      //                           final bool response =
+      //                               await fileService.deleteFile(fileSB);
+      //                           if (response) {
+      //                             Navigator.of(context).pop();
+      //                             showCustomSnackBar(context, "File deleted");
+      //                             setState(() {
+      //                               images = fileService.getImageList();
+      //                               docs = fileService.getDocList();
+      //                             });
+      //                             return;
+      //                           }
+      //
+      //                           Navigator.of(context).pop();
+      //                           showCustomSnackBar(context,
+      //                               "An error occurred when deleting the file");
+      //                         },
+      //                         style: ElevatedButton.styleFrom(
+      //                           backgroundColor: Colors.green,
+      //                           foregroundColor: Colors.white,
+      //                           shape: RoundedRectangleBorder(
+      //                             borderRadius: BorderRadius.circular(20),
+      //                           ),
+      //                           minimumSize: const Size(80, 36),
+      //                         ),
+      //                         child: const Text('Delete'),
+      //                       ),
+      //                       const SizedBox(width: 10),
+      //                       ElevatedButton(
+      //                         onPressed: () {
+      //                           Navigator.of(context).pop();
+      //                         },
+      //                         style: ElevatedButton.styleFrom(
+      //                           backgroundColor: Colors.red,
+      //                           foregroundColor: Colors.white,
+      //                           shape: RoundedRectangleBorder(
+      //                             borderRadius: BorderRadius.circular(20),
+      //                           ),
+      //                           minimumSize: const Size(80, 36),
+      //                         ),
+      //                         child: const Text('Cancel'),
+      //                       ),
+      //                     ],
+      //                   ),
+      //                 ],
+      //               ),
+      //             ),
+      //           );
+      //         });
+      //   },
+      // ),
+      // PopupMenuItem(
+      //   child: const Text("Rename", style: TextStyle(color: Colors.black)),
+      //   onTap: () {
+      //     renameController.text = fileSB.name.substring(0, fileSB.name.length - fileSB.extension.length - 1);
+      //
+      //     showDialog(
+      //         context: context,
+      //         builder: (context) {
+      //           return Dialog(
+      //             shape: RoundedRectangleBorder(
+      //               borderRadius: BorderRadius.circular(12),
+      //             ),
+      //             child: Padding(
+      //               padding: const EdgeInsets.all(16.0),
+      //               child: Column(
+      //                 mainAxisAlignment: MainAxisAlignment.center,
+      //                 mainAxisSize: MainAxisSize.min,
+      //                 children: [
+      //                   const Text("Write the new name"),
+      //                   const SizedBox(height: 8),
+      //                   TextFormField(
+      //                     controller: renameController,
+      //                   ),
+      //                   const SizedBox(height: 8),
+      //                   Row(
+      //                     mainAxisAlignment: MainAxisAlignment.end,
+      //                     children: [
+      //                       ElevatedButton(
+      //                         onPressed: () async {
+      //                           final bool response = await fileService.renameFile(
+      //                               fileSB,
+      //                               "${renameController.text.trim()}.${fileSB.extension}");
+      //
+      //                           if (response) {
+      //                             Navigator.of(context).pop();
+      //                             showCustomSnackBar(context, "File renamed");
+      //                             setState(() {
+      //                               images = fileService.getImageList();
+      //                               docs = fileService.getDocList();
+      //                             });
+      //                             return;
+      //                           }
+      //                           Navigator.of(context).pop();
+      //                           showCustomSnackBar(context,
+      //                               "An error occurred when renaming the file");
+      //                         },
+      //                         style: ElevatedButton.styleFrom(
+      //                           backgroundColor: Colors.green,
+      //                           foregroundColor: Colors.white,
+      //                           shape: RoundedRectangleBorder(
+      //                             borderRadius: BorderRadius.circular(20),
+      //                           ),
+      //                           minimumSize: const Size(80, 36),
+      //                         ),
+      //                         child: const Text('Rename'),
+      //                       ),
+      //                       const SizedBox(width: 10),
+      //                       ElevatedButton(
+      //                         onPressed: () {
+      //                           Navigator.of(context).pop();
+      //                         },
+      //                         style: ElevatedButton.styleFrom(
+      //                           backgroundColor: Colors.red,
+      //                           foregroundColor: Colors.white,
+      //                           shape: RoundedRectangleBorder(
+      //                             borderRadius: BorderRadius.circular(20),
+      //                           ),
+      //                           minimumSize: const Size(80, 36),
+      //                         ),
+      //                         child: const Text('Cancel'),
+      //                       ),
+      //                     ],
+      //                   ),
+      //                 ],
+      //               ),
+      //             ),
+      //           );
+      //         }).whenComplete(() {
+      //       //renameController.dispose();
+      //     });
+      //   },
+      // ),
+      // PopupMenuItem(
+      //   ///Share File
+      //   child: const Text("Share", style: TextStyle(color: Colors.black)),
+      //   onTap: () {
+      //     showDialog(
+      //         context: context,
+      //         builder: (context) {
+      //           return FileShareModal(fileSB: fileSB);
+      //         });
+      //   },
+      // ),
       PopupMenuItem(
-        child: const Text("Delete", style: TextStyle(color: Colors.black)),
-        onTap: () {
-          showDialog(
-              context: context,
-              builder: (context) {
-                return Dialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                            "Are you sure you want to delete this file?"),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                final bool response =
-                                    await fileService.deleteFile(fileSB);
-                                if (response) {
-                                  Navigator.of(context).pop();
-                                  showCustomSnackBar(context, "File deleted");
-                                  setState(() {
-                                    images = fileService.getImageList();
-                                    docs = fileService.getDocList();
-                                  });
-                                  return;
-                                }
-
-                                Navigator.of(context).pop();
-                                showCustomSnackBar(context,
-                                    "An error occurred when deleting the file");
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Delete'),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              });
-        },
-      ),
-      PopupMenuItem(
-        child: const Text("Rename", style: TextStyle(color: Colors.black)),
-        onTap: () {
-          renameController.text = fileSB.name.substring(0, fileSB.name.length - fileSB.extension.length - 1);
-
-          showDialog(
-              context: context,
-              builder: (context) {
-                return Dialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text("Write the new name"),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: renameController,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                final bool response = await fileService.renameFile(
-                                    fileSB,
-                                    "${renameController.text.trim()}.${fileSB.extension}");
-
-                                if (response) {
-                                  Navigator.of(context).pop();
-                                  showCustomSnackBar(context, "File renamed");
-                                  setState(() {
-                                    images = fileService.getImageList();
-                                    docs = fileService.getDocList();
-                                  });
-                                  return;
-                                }
-                                Navigator.of(context).pop();
-                                showCustomSnackBar(context,
-                                    "An error occurred when renaming the file");
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Rename'),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).whenComplete(() {
-            //renameController.dispose();
-          });
-        },
-      ),
-      PopupMenuItem(
-        ///Share File
-        child: const Text("Share", style: TextStyle(color: Colors.black)),
-        onTap: () {
-          showDialog(
-              context: context,
-              builder: (context) {
-                return FileShareModal(fileSB: fileSB);
-              });
+        child: const Text("Download", style: TextStyle(color: Colors.black)),
+        onTap: () async {
+          await downloadFile(fileSB, true);
         },
       ),
     ];
