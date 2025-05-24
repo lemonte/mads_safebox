@@ -28,7 +28,7 @@ class _FileShareModalState extends State<FileShareModal> {
   String url = '';
 
   String selectedCategory = 'View';
-  List<String> categories = ['View', 'Edit'];
+  List<String> categories = ['View', 'Download'];
 
   String encryptUrl(String url) {
 
