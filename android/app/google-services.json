@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "270946605394",
+    "project_id": "safebox-257ee",
+    "storage_bucket": "safebox-257ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:270946605394:android:9f456ae8ef3da3aa61828b",
+        "android_client_info": {
+          "package_name": "com.example.mads_safebox"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgVDTtRGLX1ViHN3sY-IKZK0Cm06qvOgw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

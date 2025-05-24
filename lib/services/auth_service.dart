@@ -76,7 +76,12 @@ class AuthService {
       serverClientId: webClientId,
     );
     final googleUser = await googleSignIn.signIn();
-    final googleAuth = await googleUser!.authentication;
+    
+    if (googleUser == null) {
+      throw Exception('Google sign-in was canceled');
+    }
+    
+    final googleAuth = await googleUser.authentication;
     final accessToken = googleAuth.accessToken;
     final idToken = googleAuth.idToken;
     if (accessToken == null) {
