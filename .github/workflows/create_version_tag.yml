@@ -1,0 +1,45 @@
+name: Create Version Tag
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'pubspec.yaml'
+
+jobs:
+  create-tag:
+    name: Create Tag from Pubspec Version
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Necessário para verificar tags existentes
+      
+      - name: Get version from pubspec.yaml
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 'version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Detected version: $VERSION"
+      
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+            echo "Tag v$VERSION already exists"
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+            echo "Tag v$VERSION does not exist yet"
+          fi
+      
+      - name: Create new tag
+        if: env.TAG_EXISTS == 'false'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a "v$VERSION" -m "Version $VERSION"
+          git push origin "v$VERSION"
+          echo "Created and pushed tag v$VERSION"
