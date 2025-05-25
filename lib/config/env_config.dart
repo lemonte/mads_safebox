@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EnvConfig {
@@ -27,9 +28,9 @@ class EnvConfig {
     try {
       await dotenv.load(fileName: ".env");
       envFileLoaded = true;
-      print('Arquivo .env carregado com sucesso.');
+      debugPrint('Arquivo .env carregado com sucesso.');
     } catch (e) {
-      print('Arquivo .env não encontrado. Usando variáveis de ambiente do sistema.');
+      debugPrint('Arquivo .env não encontrado. Usando variáveis de ambiente do sistema.');
     }
 
     supabaseUrl = _getEnvVariable('SUPABASE_URL', envFileLoaded);
