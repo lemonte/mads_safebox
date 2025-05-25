@@ -1,0 +1,2 @@
+/Users/geanderson/Documents/Mestrado/metodologias/mads_safebox/android/app/.cxx/Debug/35376n2s/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/geanderson/Documents/Mestrado/metodologias/mads_safebox/android/app/.cxx/Debug/35376n2s/armeabi-v7a/CMakeFiles/rebuild_cache.dir
