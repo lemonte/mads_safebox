@@ -3,8 +3,8 @@ name: Create Version Tag
 on:
   push:
     branches: [ master ]
-    # paths:
-    #   - 'pubspec.yaml'
+    paths:
+      - 'pubspec.yaml'
 
 jobs:
   create-tag:
