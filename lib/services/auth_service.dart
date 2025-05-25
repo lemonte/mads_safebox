@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mads_safebox/config/env_config.dart';
 import '../models/user.dart';
@@ -11,8 +12,7 @@ class AuthService {
       email: email,
       password: password,
     );
-    print("user: " + authResponse.user.toString());
-    print("session: " + authResponse.session.toString());
+
     if (authResponse.user != null) {
       UserSB user = UserSB(
         id: authResponse.user!.id,
@@ -40,7 +40,9 @@ class AuthService {
         'name': name,
       });
     } on Exception catch (e) {
-      print("Error inserting user: " + e.toString());
+      if(kDebugMode){
+        print("Error inserting user: $e");
+      }
     }
     return authResponse;
   }
@@ -103,7 +105,9 @@ class AuthService {
         'name': user.nome,
       },onConflict: 'id',);
     } on Exception catch (e) {
-      print("Error inserting user: " + e.toString());
+      if(kDebugMode) {
+        print("Error inserting user: $e");
+      }
     }
   }
 
@@ -127,7 +131,9 @@ class AuthService {
             'name': user.userMetadata?['name'],
           }, onConflict: 'id');
         } catch (e) {
-          print("Error inserting user: " + e.toString());
+          if(kDebugMode){
+            print("Error inserting user: $e");
+          }
         }
       }
     });
