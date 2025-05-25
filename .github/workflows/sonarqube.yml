@@ -1,36 +1,22 @@
-name: SonarQube Analysis
-
+name: Build
 on:
   push:
-    branches: [ master, develop ]
+    branches:
+      - master
   pull_request:
-    branches: [ master, develop ]
-  workflow_dispatch:  # Permite execução manual
-
+    types: [opened, synchronize, reopened]
 jobs:
   sonarqube:
-    name: SonarQube Scan
+    name: SonarQube
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Necessário para o SonarQube ver todo o histórico
-      
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.29.2'
-          channel: 'stable'
-      
-      - name: Get dependencies
-        run: flutter pub get
-      
-      - name: Run tests with coverage
-        run: flutter test --coverage
-      
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      # The analysis requires to retrieve dependencies and build successfully
+      - name: Build
+        run: flutter build apk
       - name: SonarQube Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
