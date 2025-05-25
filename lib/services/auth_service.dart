@@ -1,5 +1,5 @@
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:mads_safebox/config/env_config.dart';
 import '../models/user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -67,13 +67,12 @@ class AuthService {
   }
 
   Future<void> nativeGoogleSignIn() async {
-
-    var webClientId = dotenv.env['GOOGLE_CLIENT_ID']!;
-
-    var iosClientId = dotenv.env['IOS_CLIENT_ID']!;
+    final EnvConfig config = EnvConfig();
+    config.checkInitialized();
+    
     final GoogleSignIn googleSignIn = GoogleSignIn(
-      clientId: iosClientId,
-      serverClientId: webClientId,
+      clientId: config.iosClientId,
+      serverClientId: config.googleClientId,
     );
     final googleUser = await googleSignIn.signIn();
     
