@@ -20,7 +20,7 @@ void main() async {
     anonKey: EnvConfig().supabaseAnonKey,
   );
 
-  const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/launcher_icon');
   const initializationSettingsIOS = DarwinInitializationSettings(
     requestAlertPermission: true,
     requestBadgePermission: true,

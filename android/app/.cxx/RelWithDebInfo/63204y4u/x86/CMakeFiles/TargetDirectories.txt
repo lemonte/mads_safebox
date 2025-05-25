@@ -1,0 +1,2 @@
+/Users/geanderson/Documents/Mestrado/metodologias/mads_safebox/android/app/.cxx/RelWithDebInfo/63204y4u/x86/CMakeFiles/edit_cache.dir
+/Users/geanderson/Documents/Mestrado/metodologias/mads_safebox/android/app/.cxx/RelWithDebInfo/63204y4u/x86/CMakeFiles/rebuild_cache.dir
