@@ -45,4 +45,4 @@ jobs:
           git push origin "v$VERSION"
           echo "Created and pushed tag v$VERSION"
         env:
-          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
