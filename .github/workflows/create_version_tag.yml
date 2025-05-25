@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Necessário para verificar tags existentes
+          token: ${{ secrets.GIT_TOKEN }}
       
       - name: Get version from pubspec.yaml
         id: get_version
@@ -43,3 +44,5 @@ jobs:
           git tag -a "v$VERSION" -m "Version $VERSION"
           git push origin "v$VERSION"
           echo "Created and pushed tag v$VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
