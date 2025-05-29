@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:mads_safebox/models/role.dart';
 import 'package:mads_safebox/models/shared.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,21 +8,17 @@ import '../models/sharedplusfile.dart';
 
 class ShareFilesService {
 
-  Future<void> shareFile(int fileId, String filePath, DateTime expireDate, String role, String url, String password) async {
+  Future<void> shareFile(int fileId, String filePath, DateTime expireDate, Role role, String url, String password) async {
     if(expireDate.isBefore(DateTime.now())) {
-      if (kDebugMode) {
-        print('Error: Expiration date must be in the future.');
-      }
+      debugPrint('Error: Expiration date must be in the future.');
       throw Exception('Expiration date must be in the future');
     }
-    if(role != 'View' && role != 'Download') {
-      if (kDebugMode) {
-        print('Error: Role must be either "View" or "Download".');
-      }
+    if(role != Role.view && role != Role.download) {
+      debugPrint('Error: Role must be either "View" or "Download".');
       throw Exception('Role must be either "View" or "Download".');
     }
     var expireDateToSupabase = DateFormat('yyyy-MM-dd').format(expireDate);
-
+    debugPrint(role.name);
     try {
       await Supabase.instance.client
           .from('shared')
@@ -30,40 +27,34 @@ class ShareFilesService {
             'path': filePath,
             'uid': Supabase.instance.client.auth.currentUser!.id,
             'expire_date': expireDateToSupabase,
-            'role': role,
+            'role': role.name,
             'url': url,
             'password': password,
           });
     } catch (e) {
-      if (kDebugMode) {
-        print('Error sharing file: $e');
-      }
-      throw Exception('Error sharing file');
+      debugPrint('Error sharing file: $e');
+      throw Exception('Error sharing file $e');
     }
   }
 
-  Future<SharedSB?> getSharedFileFromLink(int fileId, DateTime date, String role, String password) async {
+  Future<SharedSB?> getSharedFileFromLink(int fileId, DateTime date, Role role, String password) async {
     if(date.isBefore(DateTime.now())) {
-      if (kDebugMode) {
-        print('Error: Autorization expired.');
-      }
+      debugPrint('Error: Autorization expired.');
       throw Exception('Autorization expired');
     }
-    role = role.substring(0,1).toUpperCase() + role.substring(1).toLowerCase();
+
     try {
       final response = await Supabase.instance.client
           .from('shared')
           .select()
           .eq('file_id', fileId)
           .eq('expire_date', date)
-          .eq('role', role)
+          .eq('role', role.name)
           .eq('password', password);
+      debugPrint('Response: $response');
       final List<SharedSB> sharedList = (response)
           .map((item) => SharedSB.fromJson(item))
           .toList();
-      if (kDebugMode) {
-        print(sharedList);
-      }
       if(sharedList.isEmpty){
         return null;
       }
@@ -81,9 +72,7 @@ class ShareFilesService {
 
 
     } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching shared files: $e');
-      }
+      debugPrint('Error fetching shared files: $e');
       return null;
     }
   }
@@ -110,9 +99,7 @@ class ShareFilesService {
 
       return sharedFiles;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching shared files: $e');
-      }
+      debugPrint('Error fetching shared files: $e');
       throw Exception('Error fetching shared files');
     }
   }

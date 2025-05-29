@@ -1,9 +1,11 @@
+import 'package:mads_safebox/models/role.dart';
+
 class SharedSB {
   final int id;
   final int fileId;
   final String uid;
   final DateTime expireDate;
-  final String role;
+  final Role role;
   final String url;
   final String password;
   final String path;
@@ -27,7 +29,10 @@ class SharedSB {
       fileId: json['file_id'],
       uid: json['uid'],
       expireDate: DateTime.parse(json['expire_date']),
-      role: json['role'],
+      role: Role.values.firstWhere(
+            (e) => e.name == json['role'],
+        orElse: () => Role.view,
+      ),
       url: json['url'],
       password: json['password'],
       path: json['path'],
@@ -41,7 +46,7 @@ class SharedSB {
       'file_id': fileId,
       'uid': uid,
       'expire_date': expireDate.toIso8601String(),
-      'role': role,
+      'role': role.name,
       'url': url,
       'password': password,
       'path': path,

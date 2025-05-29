@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -16,6 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/file.dart';
+import '../models/role.dart';
 import '../models/shared.dart';
 import '../services/auth_service.dart';
 import '../services/file_service.dart';
@@ -83,6 +82,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
       final file = File(filePath);
 
       if (await file.exists()) {
+        if(!mounted) return;
         notifications ? showCustomSnackBar(context, "O arquivo '${fileSB.name}' já existe.") : null;
         return;
       }
@@ -118,7 +118,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
           payload: filePath,
         ) : null;
       }
-
+      if(!mounted) return;
       notifications ? showCustomSnackBar(context, "File downloaded") : null;
     } catch (e) {
       if (kDebugMode) {
@@ -224,6 +224,38 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
     );
   }
 
+  void _navigateToFilePage(Uint8List fileBytes, FileSB fileSB, SharedSB sharedSB) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FilePage(fileSB: fileSB, sharedSB: sharedSB, file: fileBytes),
+      ),
+    );
+  }
+
+  void _showDownloadingDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Downloading File"),
+                SizedBox(height: 8),
+                Loading(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   FutureBuilder<List<SharedFileSB>> buildFileList() {
     return FutureBuilder<List<SharedFileSB>>(
       future: getSharedFiles(),
@@ -262,29 +294,27 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                               return;
                             }
 
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return Dialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text("Downloading File"),
-                                        SizedBox(height: 8),
-                                        Loading(),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
+                            try {
+                              AuthService authService = AuthService();
+                              Directory? directory;
+                              directory = await getDownloadsDirectory();
+                              final userId = authService.getCurrentUser().id;
+                              final targetDirPath = "${directory!.path}/$userId/${snapshot.data![i].fileSB.path.split("/").first}";
+                              final fileFullPath = "$targetDirPath/${snapshot.data![i].fileSB.path.split("/").last}";
+                              final filePath = fileFullPath;
+                              final downloadedFile = File(filePath);
+                              if(await downloadedFile.exists()){
+                                final fileBytes = await downloadedFile.readAsBytes();
+                                if (!mounted) return;
+                                _navigateToFilePage(fileBytes, snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
+                                return;
+                              }
+                            } on Exception catch (e) {
+                              debugPrint("Error checking downloaded file: $e");
+                            }
+
+                            if (!mounted) return;
+                            _showDownloadingDialog();
 
                             Uint8List? file = await fileService
                                 .getSharedFile(snapshot.data![i].fileSB.path, snapshot.data![i].sharedSB.uid);
@@ -316,7 +346,6 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Expanded(
-                                flex: 1,
                                 child: Icon(Icons
                                     .image), //TODO : Colocar aqui a miniatura da imagem
                               ),
@@ -346,9 +375,8 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                           ),
                         ),
                       ),
-                      snapshot.data![i].sharedSB.role == "Download" ?
+                      snapshot.data![i].sharedSB.role == Role.download ?
                       Expanded( //todo fazer com as permissões
-                        flex: 1,
                         child: PopupMenuButton(
                           icon: const Icon(
                             Icons.menu,

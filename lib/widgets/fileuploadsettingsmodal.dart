@@ -1,7 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mads_safebox/services/category_service.dart';
@@ -23,6 +20,7 @@ class FileUploadSettingsModal extends StatefulWidget {
 }
 
 class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
+  final int defaultCategoryID = 1; // Default category ID if none is selected
   CategoryService categoryService = CategoryService();
   FileService fileService = FileService();
   DateTime? expiringDate;
@@ -45,19 +43,16 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
 
       try {
         await fileService.uploadFile(
-            widget.selectedFiles, selectedCategory?.id ?? 1, expiringDate);
+            widget.selectedFiles, selectedCategory?.id ?? defaultCategoryID, expiringDate);
 
-        if (context.mounted) {
-          showCustomSnackBar(context, "Files uploaded successfully");
-          Navigator.pop(context);
-        }
+        if (!mounted) return;
+        showCustomSnackBar(context, "Files uploaded successfully");
+        Navigator.pop(context);
+
       } catch (e) {
-        if (kDebugMode) {
-          print("Error uploading file: $e");
-        }
-        if (context.mounted) {
-          showCustomSnackBar(context, "Error uploading file: $e");
-        }
+        debugPrint("Error uploading file: $e");
+        showCustomSnackBar(context, "Error uploading file: $e");
+
       }
       Navigator.pop(context);
       setState(() {
@@ -104,19 +99,8 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
               child: ElevatedButton(
                 onPressed: () async {
                   List<CategorySB> catValue = await categories;
-
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return CategoryCreateModal(categories: catValue);
-                    },
-                  ).then((value) async {
-                    if (value != null) {
-                      (await categories).add(value);
-                      selectedCategory = (await categories).last;
-                      setState(() {});
-                    }
-                  });
+                  if (!mounted) return;
+                  _showCreateCategoryDialog(catValue);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey.shade300,
@@ -220,4 +204,22 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
       ),
     );
   }
+
+  void _showCreateCategoryDialog(List<CategorySB> catValue) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CategoryCreateModal(categories: catValue);
+      },
+    ).then((value) async {
+      if (value != null) {
+        (await categories).add(value);
+        selectedCategory = (await categories).last;
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    });
+  }
+
 }

@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mads_safebox/models/role.dart';
 import 'package:mads_safebox/models/shared.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:mads_safebox/widgets/custom_snack_bar.dart';
@@ -152,7 +153,7 @@ class _FilePageState extends State<FilePage> {
           children: [
             Row(
               children: [
-                widget.sharedSB == null || widget.sharedSB?.role == "Download" ?
+                widget.sharedSB == null || widget.sharedSB?.role == Role.download ?
                 SizedBox(
                   width: 40,
                   child: IconButton(
