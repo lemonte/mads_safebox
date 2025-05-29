@@ -376,7 +376,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                         ),
                       ),
                       snapshot.data![i].sharedSB.role == Role.download ?
-                      Expanded( //todo fazer com as permissões
+                      Expanded(
                         child: PopupMenuButton(
                           icon: const Icon(
                             Icons.menu,
