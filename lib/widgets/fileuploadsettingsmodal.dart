@@ -45,7 +45,7 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
 
       try {
         await fileService.uploadFile(
-            widget.selectedFiles, selectedCategory!.id, expiringDate);
+            widget.selectedFiles, selectedCategory?.id ?? 1, expiringDate);
 
         if (context.mounted) {
           showCustomSnackBar(context, "Files uploaded successfully");

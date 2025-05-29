@@ -12,13 +12,13 @@ class ShareFilesService {
       if (kDebugMode) {
         print('Error: Expiration date must be in the future.');
       }
-      return;
+      throw Exception('Expiration date must be in the future');
     }
-    if(role != 'View' && role != 'Edit') {
+    if(role != 'View' && role != 'Download') {
       if (kDebugMode) {
-        print('Error: Role must be either "View" or "Edit".');
+        print('Error: Role must be either "View" or "Download".');
       }
-      return;
+      throw Exception('Role must be either "View" or "Download".');
     }
     var expireDateToSupabase = DateFormat('yyyy-MM-dd').format(expireDate);
 
@@ -38,6 +38,7 @@ class ShareFilesService {
       if (kDebugMode) {
         print('Error sharing file: $e');
       }
+      throw Exception('Error sharing file');
     }
   }
 

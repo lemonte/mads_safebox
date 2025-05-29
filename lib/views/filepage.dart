@@ -152,6 +152,7 @@ class _FilePageState extends State<FilePage> {
           children: [
             Row(
               children: [
+                widget.sharedSB == null || widget.sharedSB?.role == "Download" ?
                 SizedBox(
                   width: 40,
                   child: IconButton(
@@ -160,7 +161,7 @@ class _FilePageState extends State<FilePage> {
                       },
                       icon: const Icon(Icons.download, color: mainColor)
                   ),
-                ),
+                ) : const SizedBox(width: 40),
                 const Expanded(
                   child: Align(
                     alignment: Alignment.center,

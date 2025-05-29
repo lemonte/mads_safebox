@@ -346,6 +346,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                           ),
                         ),
                       ),
+                      snapshot.data![i].sharedSB.role == "Download" ?
                       Expanded( //todo fazer com as permissões
                         flex: 1,
                         child: PopupMenuButton(
@@ -357,7 +358,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                             return getButtonList(snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
                           },
                         ),
-                      )
+                      ) : const SizedBox(width: 0),
                     ],
                   ),
                 ),

@@ -1,4 +1,7 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:encrypt/encrypt.dart'  as encrypt;
 import 'package:flutter/material.dart';
@@ -9,6 +12,7 @@ import 'package:mads_safebox/models/file.dart';
 import 'package:mads_safebox/services/sharefiles_service.dart';
 
 import '../global/colors.dart';
+import 'custom_snack_bar.dart';
 
 class FileShareModal extends StatefulWidget {
   final FileSB fileSB;
@@ -49,7 +53,15 @@ class _FileShareModalState extends State<FileShareModal> {
       url = 'https://safebox.com/${encryptUrl('${widget.fileSB.id}/${expiringDate.millisecondsSinceEpoch}/${selectedCategory.toLowerCase()}')}';
     });
     ShareFilesService shareFilesService = ShareFilesService();
-    await shareFilesService.shareFile(widget.fileSB.id, widget.fileSB.path, expiringDate, selectedCategory, url, passwordController.text.trim());
+    try{
+      await shareFilesService.shareFile(widget.fileSB.id, widget.fileSB.path, expiringDate, selectedCategory, url, passwordController.text.trim());
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sharing file: $e');
+      }
+      showCustomSnackBar(context, e.toString());
+      return;
+    }
     String text = 'I\'m sharing this file with you: $url';
     if(passwordController.text.trim().isNotEmpty) {
       text += '\nPassword: ${passwordController.text}';
