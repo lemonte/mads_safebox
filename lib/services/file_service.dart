@@ -21,27 +21,21 @@ class FileService {
     } catch (e) {
       // Handle the case where the bucket already exists
       if (e.toString().contains('The resource already exists')) {
-        if (kDebugMode) {
-          print('Bucket already exists, proceeding with upload.');
-        }
+        debugPrint('Bucket already exists, proceeding with upload.');
       } else {
-        if (kDebugMode) {
-          print('Error creating bucket: $e');
-        }
+        debugPrint('Error creating bucket: $e');
       }
     }
     for (var file in file) {
       try {
         String uploadPath = '${DateTime.now().millisecondsSinceEpoch}/${file.path.split('/').last}';
-        if (kDebugMode) {
-          print("Upload path: $uploadPath");
-        }
+        debugPrint("Upload path: $uploadPath");
+
         final response = await supabaseClient.storage
             .from(authService.getCurrentUser().id)
             .upload(uploadPath, file);
-        if (kDebugMode) {
-          print("File uploaded: $response");
-        }
+
+        debugPrint("File uploaded: $response");
 
         await supabaseClient.from('files').insert({
           'uid': authService.getCurrentUser().id,
@@ -52,9 +46,7 @@ class FileService {
           'category_id': selectedCategoryId,
         });
       } catch (e) {
-        if (kDebugMode) {
-          print('Error uploading file: $e');
-        }
+        debugPrint('Error uploading file: $e');
       }
     }
   }
@@ -67,9 +59,7 @@ class FileService {
       await supabaseClient.from('files').delete().eq("id", fileSB.id);
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print("\nError when deleting file:\n$e\n");
-      }
+      debugPrint("\nError when deleting file:\n$e\n");
       return false;
     }
   }
@@ -93,9 +83,7 @@ class FileService {
           .update({"path": newPath}).eq("file_id", fileSB.id);
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print("\nError when renaming file:\n$e\n");
-      }
+      debugPrint("\nError when renaming file:\n$e\n");
       return false;
     }
   }
@@ -106,15 +94,11 @@ class FileService {
           .from(authService.getCurrentUser().id)
           .download(path);//todo removi o transform porque dava erro com os pdfs
 
-      if (kDebugMode) {
-        print("File downloaded: ${response.lengthInBytes} bytes");
-      }
+      debugPrint("File downloaded: ${response.lengthInBytes} bytes");
 
       return response;
     } catch (e) {
-      if (kDebugMode) {
-        print(e.toString());
-      }
+      debugPrint(e.toString());
       return null;
     }
   }
@@ -124,15 +108,12 @@ class FileService {
       final Uint8List response =
           await supabaseClient.storage.from(uid).download(path);
 
-      if (kDebugMode) {
-        print("File downloaded: ${response.lengthInBytes} bytes");
-      }
+      debugPrint("File downloaded: ${response.lengthInBytes} bytes");
+
 
       return response;
     } catch (e) {
-      if (kDebugMode) {
-        print(e.toString());
-      }
+      debugPrint(e.toString());
       return null;
     }
   }
@@ -185,9 +166,7 @@ class FileService {
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print(e.toString());
-      }
+      debugPrint(e.toString());
       return false;
     }
   }
@@ -206,9 +185,8 @@ class FileService {
 
       return sharedFiles;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching shared files: $e');
-      }
+      debugPrint('Error fetching shared files: $e');
+
       return [];
     }
   }

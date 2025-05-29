@@ -14,6 +14,7 @@ import 'package:mads_safebox/widgets/custom_snack_bar.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 
 import '../global/colors.dart';
+import '../models/role.dart';
 
 class OpenLinkModal extends StatefulWidget {
   const OpenLinkModal({super.key});
@@ -76,13 +77,18 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
 
       int fileId = int.parse(decrypted.split('/').first);
       DateTime expireDate = DateTime.fromMillisecondsSinceEpoch(int.parse(decrypted.split('/').elementAt(1)));
-      String role = decrypted.split('/').last;
+      String roleString = decrypted.split('/').last;
 
-      if (kDebugMode) {
-        print(fileId);
-        print(expireDate);
-        print(role);
-      }
+      Role role = Role.values.firstWhere(
+            (e) => e.name == roleString,
+        orElse: () => Role.view,
+      );
+
+
+      debugPrint(fileId.toString());
+      debugPrint(expireDate.toString());
+      debugPrint(role.name);
+
 
       SharedSB? response = await shareFilesService.getSharedFileFromLink(fileId, expireDate, role, password);
       if(response == null){
@@ -108,7 +114,7 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => FilePage(fileSB: fileSB, file: file),
+          builder: (context) => FilePage(fileSB: fileSB, file: file, sharedSB: response),
         )
       );
       setState(() {

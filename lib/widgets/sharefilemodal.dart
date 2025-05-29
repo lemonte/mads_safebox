@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:mads_safebox/models/role.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:encrypt/encrypt.dart'  as encrypt;
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:mads_safebox/models/file.dart';
 import 'package:mads_safebox/services/sharefiles_service.dart';
 
 import '../global/colors.dart';
+import 'custom_snack_bar.dart';
 
 class FileShareModal extends StatefulWidget {
   final FileSB fileSB;
@@ -25,8 +27,7 @@ class _FileShareModalState extends State<FileShareModal> {
   TextEditingController passwordController = TextEditingController();
   String url = '';
 
-  String selectedCategory = 'View';
-  List<String> categories = ['View', 'Download'];
+  Role selectedCategory = Role.view;
 
   String encryptUrl(String url) {
 
@@ -46,10 +47,19 @@ class _FileShareModalState extends State<FileShareModal> {
 
   void shareFile() async {
     setState(() {
-      url = 'https://safebox.com/${encryptUrl('${widget.fileSB.id}/${expiringDate.millisecondsSinceEpoch}/${selectedCategory.toLowerCase()}')}';
+      url = 'https://safebox.com/${encryptUrl('${widget.fileSB.id}/${expiringDate.millisecondsSinceEpoch}/$selectedCategory')}';
     });
     ShareFilesService shareFilesService = ShareFilesService();
-    await shareFilesService.shareFile(widget.fileSB.id, widget.fileSB.path, expiringDate, selectedCategory, url, passwordController.text.trim());
+    try{
+      await shareFilesService.shareFile(widget.fileSB.id, widget.fileSB.path, expiringDate, selectedCategory, url, passwordController.text.trim());
+    } catch (e) {
+      debugPrint('Error sharing file: $e');
+
+      if (!mounted) return;
+      showCustomSnackBar(context, e.toString());
+
+      return;
+    }
     String text = 'I\'m sharing this file with you: $url';
     if(passwordController.text.trim().isNotEmpty) {
       text += '\nPassword: ${passwordController.text}';
@@ -132,17 +142,18 @@ class _FileShareModalState extends State<FileShareModal> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
+                      child: DropdownButton<Role>(
                         isExpanded: true,
                         value: selectedCategory,
                         icon: const Icon(Icons.arrow_drop_down),
-                        items: categories.map((String category) {
-                          return DropdownMenuItem<String>(
-                            value: category,
-                            child: Text(category),
+                        items: Role.values.map((Role role) {
+                          final String capitalized = role.name[0].toUpperCase() + role.name.substring(1);
+                          return DropdownMenuItem<Role>(
+                            value: role,
+                            child: Text(capitalized),
                           );
                         }).toList(),
-                        onChanged: (String? newValue) {
+                        onChanged: (Role? newValue) {
                           setState(() {
                             selectedCategory = newValue!;
                             url = '';
