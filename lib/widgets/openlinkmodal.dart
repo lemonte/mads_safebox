@@ -84,11 +84,11 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
         orElse: () => Role.view,
       );
 
-      if (kDebugMode) {
-        print(fileId);
-        print(expireDate);
-        print(role.name);
-      }
+
+      debugPrint(fileId.toString());
+      debugPrint(expireDate.toString());
+      debugPrint(role.name);
+
 
       SharedSB? response = await shareFilesService.getSharedFileFromLink(fileId, expireDate, role, password);
       if(response == null){

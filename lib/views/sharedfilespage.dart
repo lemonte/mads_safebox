@@ -375,18 +375,20 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                           ),
                         ),
                       ),
-                      snapshot.data![i].sharedSB.role == Role.download ?
-                      Expanded(
-                        child: PopupMenuButton(
-                          icon: const Icon(
-                            Icons.menu,
-                            color: Colors.black,
+                      Visibility(
+                        visible: snapshot.data![i].sharedSB.role == Role.download,
+                        child: Expanded(
+                          child: PopupMenuButton(
+                            icon: const Icon(
+                              Icons.menu,
+                              color: Colors.black,
+                            ),
+                            itemBuilder: (BuildContext context) {
+                              return getButtonList(snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
+                            },
                           ),
-                          itemBuilder: (BuildContext context) {
-                            return getButtonList(snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
-                          },
                         ),
-                      ) : const SizedBox(width: 0),
+                      ),
                     ],
                   ),
                 ),
