@@ -19,6 +19,7 @@ class _CategoryRenameModalState extends State<CategoryRenameModal> {
   String infoText = "";
 
   void handleCategoryRenameResult(dynamic response, String name) {
+    if(!mounted) return;
     if (response) {
       Navigator.of(context).pop(name);
       showCustomSnackBar(context, "Category renamed");

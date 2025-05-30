@@ -27,6 +27,7 @@ class _CategoryDeleteModalState extends State<CategoryDeleteModal> {
   bool isDeleting = false;
 
   void handleCategoryDeletionResult(dynamic response, dynamic responseFiles) {
+    if(!mounted) return;
     if (response && responseFiles) {
       Navigator.of(context).pop(response);
       showCustomSnackBar(context, "Category deleted");

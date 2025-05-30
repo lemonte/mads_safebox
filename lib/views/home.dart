@@ -91,6 +91,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       handleDownloadSuccess(context, notifications);
 
     } catch (e) {
+      if(!context.mounted) return;
       handleDownloadError(context, notifications, e);
     }
   }

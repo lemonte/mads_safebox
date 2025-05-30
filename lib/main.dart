@@ -63,8 +63,14 @@ class MyApp extends StatelessWidget {
         dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
         checkboxTheme: CheckboxThemeData(
           fillColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return Colors.grey.shade300;
+            }
             if (states.contains(WidgetState.selected)) {
               return mainColor;
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return Colors.grey.shade100;
             }
             return Colors.white;
           }),
