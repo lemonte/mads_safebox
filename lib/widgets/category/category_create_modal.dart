@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:mads_safebox/models/category.dart';
 import 'package:mads_safebox/services/category_service.dart';
@@ -18,6 +16,16 @@ class _CategoryCreateModalState extends State<CategoryCreateModal> {
   CategoryService categoryService = CategoryService();
   TextEditingController textController = TextEditingController();
   String infoText = "";
+
+  void handleCategoryCreationResult(dynamic response) {
+    if (response != null) {
+      Navigator.of(context).pop(response);
+      showCustomSnackBar(context, "Category created");
+    } else {
+      Navigator.of(context).pop();
+      showCustomSnackBar(context, "An error occurred when creating the category");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,14 +83,8 @@ class _CategoryCreateModalState extends State<CategoryCreateModal> {
 
                     final response = await categoryService.createCategory(name);
 
-                    if (response != null) {
-                      Navigator.of(context).pop(response);
-                      showCustomSnackBar(context, "Category created");
-                      return;
-                    }
-                    Navigator.of(context).pop();
-                    showCustomSnackBar(context,
-                        "An error occurred when creating the category");
+                    if (!mounted) return;
+                    handleCategoryCreationResult(response);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,

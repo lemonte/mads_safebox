@@ -1,6 +1,3 @@
-
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:mads_safebox/global/colors.dart';
 import 'package:mads_safebox/services/auth_service.dart';
@@ -39,11 +36,46 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return null;
   }
 
+  String? validatePassword({required String? pass}) {
+    if (pass == null || pass.trim().isEmpty) {
+      return 'Password is required';
+    }
+
+    final password = pass.trim();
+
+    if (password.length < 6) {
+      return 'Password must have at least 6 characters';
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+
+    if (!RegExp(r'\d').hasMatch(password)) {
+      return 'Password must contain at least one number';
+    }
+
+    return null; // valid password
+  }
 
   @override
   void initState() {
     super.initState();
     loading = false;
+  }
+
+  void handlePostRegistration(bool success) {
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(context).pop();
+    } else {
+      showCustomSnackBar(context, 'Error creating account');
+    }
+
+    setState(() {
+      loading = false;
+    });
   }
 
   @override
@@ -123,7 +155,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     const SizedBox(height: 15),
                     TextFormField(
                       controller: passwordController,
-                      validator: (val) => val!.trim().length < 6 ? 'Password must have at least 6 characters' : null,
+                      validator: (val) => validatePassword(pass: val!.trim()),
                       obscureText: true,
                       decoration: InputDecoration(
                         hintText: 'Password',
@@ -135,19 +167,27 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     const SizedBox(height: 25),
                     ElevatedButton(
                       onPressed: () async {
-                        if (!formkey.currentState!.validate()) {
-                          return;
-                        }
+                        if (!formkey.currentState!.validate()) return;
+
                         setState(() {
                           loading = true;
                         });
+
+                        bool success = false;
+
                         try {
-                          await auth.signUp(emailController.text.trim(), passwordController.text.trim(), usernameController.text.trim());
-                        } on Exception {
-                          showCustomSnackBar(context, 'Error creating account');
+                          await auth.signUp(
+                            emailController.text.trim(),
+                            passwordController.text.trim(),
+                            usernameController.text.trim(),
+                          );
+                          success = true;
+                        } catch (e) {
+                          debugPrint('Registration error: $e');
+                          success = false;
                         }
-                        loading = false;
-                        Navigator.of(context).pop();
+
+                        handlePostRegistration(success);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: mainColor,

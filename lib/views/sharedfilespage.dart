@@ -61,21 +61,18 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
       // directory = await getApplicationDocumentsDirectory();
       // print("directory: $directory");
       directory = await getDownloadsDirectory();
-      if (kDebugMode) {
-        print("download directory: $directory");
-      }
+      debugPrint("download directory: $directory");
+
       // directory = await getExternalStorageDirectory();
       // print("external directory: $directory");
 
       final userId = authService.getCurrentUser().id;
       final targetDirPath = "${directory!.path}/$userId/${fileSB.path.split("/").first}";
-      if (kDebugMode) {
-        print("targetDirPath: $targetDirPath");
-      }
+      debugPrint("targetDirPath: $targetDirPath");
+
       final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
-      if (kDebugMode) {
-        print("fileFullPath: $fileFullPath");
-      }
+      debugPrint("fileFullPath: $fileFullPath");
+
 
       await Directory(targetDirPath).create(recursive: true);
       final filePath = fileFullPath;
@@ -87,7 +84,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
         return;
       }
 
-      await requestStoragePermission();
+      // await requestStoragePermission();
 
       if(!downloadedFiles.containsKey(fileSB.name)){
         Uint8List? file = await fileService.getFile(fileSB.path);
@@ -95,9 +92,8 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
       }
 
       await file.writeAsBytes(downloadedFiles[fileSB.name]!);
-      if (kDebugMode) {
-        print("File downloaded to: ${file.path}");
-      }
+      debugPrint("File downloaded to: ${file.path}");
+
 
       if(notifications) {
         // Mostra notificação de download
@@ -121,9 +117,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
       if(!mounted) return;
       notifications ? showCustomSnackBar(context, "File downloaded") : null;
     } catch (e) {
-      if (kDebugMode) {
-        print("Error downloading file: $e");
-      }
+      debugPrint("Error downloading file: $e");
       notifications ? showCustomSnackBar(context, "Error downloading file") : null;
     }
   }
@@ -224,7 +218,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
     );
   }
 
-  void _navigateToFilePage(Uint8List fileBytes, FileSB fileSB, SharedSB sharedSB) {
+  void navigateToFilePage(Uint8List fileBytes, FileSB fileSB, SharedSB sharedSB) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -233,7 +227,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
     );
   }
 
-  void _showDownloadingDialog() {
+  void showDownloadingDialog() {
     showDialog(
       context: context,
       builder: (context) {
@@ -306,7 +300,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                               if(await downloadedFile.exists()){
                                 final fileBytes = await downloadedFile.readAsBytes();
                                 if (!mounted) return;
-                                _navigateToFilePage(fileBytes, snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
+                                navigateToFilePage(fileBytes, snapshot.data![i].fileSB, snapshot.data![i].sharedSB);
                                 return;
                               }
                             } on Exception catch (e) {
@@ -314,14 +308,11 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                             }
 
                             if (!mounted) return;
-                            _showDownloadingDialog();
-
+                            showDownloadingDialog();
                             Uint8List? file = await fileService
                                 .getSharedFile(snapshot.data![i].fileSB.path, snapshot.data![i].sharedSB.uid);
 
-                            if (kDebugMode) {
-                              print(snapshot.data![i].fileSB.path);
-                            }
+                            debugPrint(snapshot.data![i].fileSB.path);
 
                             if (context.mounted) {
                               Navigator.pop(context);

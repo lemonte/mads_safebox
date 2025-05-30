@@ -4,11 +4,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:encrypt/encrypt.dart'  as encrypt;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/intl.dart';
 import 'package:mads_safebox/models/file.dart';
 import 'package:mads_safebox/services/sharefiles_service.dart';
 
+import '../config/env_config.dart';
 import '../global/colors.dart';
 import 'custom_snack_bar.dart';
 
@@ -31,10 +31,10 @@ class _FileShareModalState extends State<FileShareModal> {
 
   String encryptUrl(String url) {
 
-    final combinedKey = utf8.encode((dotenv.env['PUBLIC_KEY']! + dotenv.env['PRIVATE_KEY']!).padRight(32, '0')).sublist(0, 32);
+    final combinedKey = utf8.encode((EnvConfig().publicKey + EnvConfig().privateKey).padRight(32, '0')).sublist(0, 32);
     final key = encrypt.Key(combinedKey);
 
-    final ivString = dotenv.env['IV_KEY']!;
+    final ivString = EnvConfig().ivKey;
     final iv = encrypt.IV.fromUtf8(ivString);
 
 
@@ -47,7 +47,7 @@ class _FileShareModalState extends State<FileShareModal> {
 
   void shareFile() async {
     setState(() {
-      url = 'https://safebox.com/${encryptUrl('${widget.fileSB.id}/${expiringDate.millisecondsSinceEpoch}/$selectedCategory')}';
+      url = 'https://safebox.com/${encryptUrl('${widget.fileSB.id}/${expiringDate.millisecondsSinceEpoch}/${selectedCategory.name}')}';
     });
     ShareFilesService shareFilesService = ShareFilesService();
     try{
@@ -99,6 +99,7 @@ class _FileShareModalState extends State<FileShareModal> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
+                      if (noExpiration) return;
                       final DateTime? pickedDate = await showDatePicker(
                         context: context,
                         initialDate: expiringDate,
@@ -143,6 +144,7 @@ class _FileShareModalState extends State<FileShareModal> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<Role>(
+                        dropdownColor: Colors.white,
                         isExpanded: true,
                         value: selectedCategory,
                         icon: const Icon(Icons.arrow_drop_down),
@@ -156,6 +158,7 @@ class _FileShareModalState extends State<FileShareModal> {
                         onChanged: (Role? newValue) {
                           setState(() {
                             selectedCategory = newValue!;
+                            debugPrint('Selected Role: ${selectedCategory.name}');
                             url = '';
                           });
                         },

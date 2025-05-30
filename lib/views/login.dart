@@ -1,9 +1,4 @@
-
-// ignore_for_file: use_build_context_synchronously
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:mads_safebox/global/colors.dart';
 import 'package:mads_safebox/views/registration.dart';
@@ -14,14 +9,14 @@ import 'package:mads_safebox/widgets/loading.dart';
 // import '../riverpod/loggeduserprovider.dart';
 import '../services/auth_service.dart';
 
-class LoginPage extends ConsumerStatefulWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  ConsumerState<LoginPage> createState() => _LoginPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage> {
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final AuthService auth = AuthService();
@@ -119,14 +114,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       child: TextButton(
                         onPressed: () async {
                           String oldpass = passwordController.text.trim();//guarda a password escrita
-                          passwordController.text = '111111';//password "fake" para passar a validação
-                          if(formkey.currentState!.validate()){//verifica que um email foi escrito
-                            await auth.resetPassword(emailController.text.trim());
-                            passwordController.text = oldpass;//retorna a password antiga
-                            showCustomSnackBar(context, 'Email de redefinição de password enviado');
-                            return;
+                          try {
+                            passwordController.text = '111111';//password "fake" para passar a validação
+                            if(formkey.currentState!.validate()){//verifica que um email foi escrito
+                              await auth.resetPassword(emailController.text.trim());
+                              passwordController.text = oldpass;//retorna a password antiga
+                              if(!context.mounted) return;
+                              showCustomSnackBar(context, 'Email de redefinição de password enviado');
+                              return;
+                            }
+                            passwordController.text = oldpass;
+                          } on Exception catch (e) {
+                            debugPrint("Error: $e");
+                            passwordController.text = oldpass;
+                            if(!context.mounted) return;
+                            showCustomSnackBar(context, 'Error sending password reset email: $e');
                           }
-                          passwordController.text = oldpass;//retorna a password antiga
+//retorna a password antiga
                         },
                         child: const Text('Forgot your password', style: TextStyle(color: Color(0xFF003366))),
                       ),
@@ -145,12 +149,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           await auth.signInWithEmail(emailController.text.trim(), passwordController.text.trim());
                           //ref.read(userProvider.notifier).state = user;
                         } on Exception {
+                          if(!context.mounted) return;
                           showCustomSnackBar(context, 'Invalid credentials');
                         }
-                        setState(() {
-                          loading = false;
-                        });
-
+                        if(context.mounted) {
+                          setState(() {
+                            loading = false;
+                          });
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: mainColor,
@@ -188,17 +194,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               await auth.nativeGoogleSignIn();
                               // ref.read(userProvider.notifier).state = user;
                             } on Exception catch (e) {
-                              if (kDebugMode) {
-                                print("Error: $e");
+                              debugPrint("Error: $e");
+                              if(context.mounted){
+                                showCustomSnackBar(context, 'Error signing in with Google $e');
+                                setState(() {
+                                  loading = false;
+                                });
                               }
-                              showCustomSnackBar(context, 'Error signing in with Google');
+                            }
+                            if(context.mounted) {
                               setState(() {
                                 loading = false;
                               });
                             }
-                            setState(() {
-                              loading = false;
-                            });
                           },
                           style: ElevatedButton.styleFrom(
                           backgroundColor: mainColor,
@@ -217,17 +225,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               await auth.signInWithFacebook();
                               // ref.read(userProvider.notifier).state = user;
                             } on Exception catch (e) {
-                              if (kDebugMode) {
-                                print("Error: $e");
+                              debugPrint("Error: $e");
+
+                              if(context.mounted){
+                                showCustomSnackBar(context, 'Error signing in with Facebook $e');
+                                setState(() {
+                                  loading = false;
+                                });
                               }
-                              showCustomSnackBar(context, 'Error signing in with Facebook');
+                            }
+                            if(context.mounted) {
                               setState(() {
                                 loading = false;
                               });
                             }
-                            setState(() {
-                              loading = false;
-                            });
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: mainColor,
