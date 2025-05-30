@@ -1,6 +1,4 @@
 
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -54,38 +52,32 @@ class _FilePageState extends State<FilePage> {
       // directory = await getApplicationDocumentsDirectory();
       // print("directory: $directory");
       directory = await getDownloadsDirectory();
-      if (kDebugMode) {
-        print("download directory: $directory");
-      }
+      debugPrint("download directory: $directory");
+
       // directory = await getExternalStorageDirectory();
       // print("external directory: $directory");
 
       final userId = authService.getCurrentUser().id;
       final targetDirPath = "${directory!.path}/$userId/${widget.fileSB.path.split("/").first}";
-      if (kDebugMode) {
-        print("targetDirPath: $targetDirPath");
-      }
+      debugPrint("targetDirPath: $targetDirPath");
       final fileFullPath = "$targetDirPath/${widget.fileSB.path.split("/").last}";
-      if (kDebugMode) {
-        print("fileFullPath: $fileFullPath");
-      }
+      debugPrint("fileFullPath: $fileFullPath");
 
       await Directory(targetDirPath).create(recursive: true);
       final filePath = fileFullPath;
       final file = File(filePath);
 
       if (await file.exists()) {
+        if(!mounted) return;
         showCustomSnackBar(context, "O arquivo '${widget.fileSB.name}' já existe.");
         return;
       }
 
-      await requestStoragePermission();
+      // await requestStoragePermission();
 
       await file.writeAsBytes(widget.file);
       await MediaScanner.loadMedia(path: file.path);
-      if (kDebugMode) {
-        print("File downloaded to: ${file.path}");
-      }
+      debugPrint("File downloaded to: ${file.path}");
 
       if(await Permission.notification.request().isGranted) {
         // Mostra notificação de download
@@ -106,12 +98,10 @@ class _FilePageState extends State<FilePage> {
           payload: filePath, // Para abrir o arquivo depois
         );
       }
-
+      if(!mounted) return;
       showCustomSnackBar(context, "File downloaded");
     } catch (e) {
-      if (kDebugMode) {
-        print("Error downloading file: $e");
-      }
+      debugPrint("Error downloading file: $e");
       showCustomSnackBar(context, "Error downloading file");
     }
   }
@@ -121,16 +111,18 @@ class _FilePageState extends State<FilePage> {
     if (widget.fileSB.extension != "pdf") {
       return Expanded(
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.memory(
-                widget.file,
-                fit: BoxFit.fitWidth,
-              ),
-              const SizedBox(height: 8),
-              Text(widget.fileSB.name),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.memory(
+                  widget.file,
+                  fit: BoxFit.fitWidth,
+                ),
+                const SizedBox(height: 8),
+                Text(widget.fileSB.name),
+              ],
+            ),
           ),
         ),
       );

@@ -1,10 +1,7 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mads_safebox/models/file.dart';
 import 'package:mads_safebox/models/shared.dart';
 import 'package:mads_safebox/services/file_service.dart';
@@ -13,6 +10,7 @@ import 'package:mads_safebox/views/filepage.dart';
 import 'package:mads_safebox/widgets/custom_snack_bar.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 
+import '../config/env_config.dart';
 import '../global/colors.dart';
 import '../models/role.dart';
 
@@ -36,13 +34,12 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
 
 
   String decryptUrl(String encryptedBase64) {
-    if (kDebugMode) {
-      print('Decrypting URL: $encryptedBase64');
-    }
-    final combinedKey = utf8.encode((dotenv.env['PUBLIC_KEY']! + dotenv.env['PRIVATE_KEY']!).padRight(32, '0')).sublist(0, 32);
+    debugPrint('Decrypting URL: $encryptedBase64');
+
+    final combinedKey = utf8.encode((EnvConfig().publicKey + EnvConfig().privateKey).padRight(32, '0')).sublist(0, 32);
     final key = encrypt.Key(combinedKey);
 
-    final ivString = dotenv.env['IV_KEY']!;
+    final ivString = EnvConfig().ivKey;
     final iv = encrypt.IV.fromUtf8(ivString);
 
     final encrypter = encrypt.Encrypter(encrypt.AES(key));
@@ -71,9 +68,8 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
       final finalResolvedUrl = '$baseUrl/$decrypted';
 
       finalUrl = finalResolvedUrl;
-      if (kDebugMode) {
-        print(decrypted);
-      }
+      debugPrint(decrypted);
+
 
       int fileId = int.parse(decrypted.split('/').first);
       DateTime expireDate = DateTime.fromMillisecondsSinceEpoch(int.parse(decrypted.split('/').elementAt(1)));
@@ -92,10 +88,12 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
 
       SharedSB? response = await shareFilesService.getSharedFileFromLink(fileId, expireDate, role, password);
       if(response == null){
-        showCustomSnackBar(context, 'File not found or incorrect password');
-        setState(() {
-          loading = false;
-        });
+        if(mounted){
+          showCustomSnackBar(context, 'File not found or incorrect password');
+          setState(() {
+            loading = false;
+          });
+        }
         return;
       }
 
@@ -104,27 +102,34 @@ class _OpenLinkModalState extends State<OpenLinkModal> {
       Uint8List? file = await fileService.getSharedFile(response.path, response.uid);
 
       if(file == null){
-        showCustomSnackBar(context, 'File not found');
+        if(mounted){
+          showCustomSnackBar(context, 'File not found');
+          setState(() {
+            loading = false;
+          });
+        }
+        return;
+      }
+      if(mounted) {
+        Navigator.pop(context);
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FilePage(fileSB: fileSB, file: file, sharedSB: response),
+            )
+        );
         setState(() {
           loading = false;
         });
-        return;
       }
-      Navigator.pop(context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FilePage(fileSB: fileSB, file: file, sharedSB: response),
-        )
-      );
-      setState(() {
-        loading = false;
-      });
-
     } on Exception catch (e) {
       if(e.toString().contains('Autorization expired')){
+        debugPrint('Error decrypting link: $e');
+        if(!mounted) return;
         showCustomSnackBar(context, 'Autorization expired');
       } else {
+        debugPrint('Error decrypting link: $e');
+        if(!mounted) return;
         showCustomSnackBar(context, 'Error decrypting link');
       }
       setState(() {

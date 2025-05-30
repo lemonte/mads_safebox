@@ -1,6 +1,4 @@
 
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -59,78 +57,82 @@ class _HomePageState extends ConsumerState<HomePage> {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
 
-  Future<void> downloadFile(FileSB fileSB, bool notifications) async {
+  Future<void> downloadFile(BuildContext context, FileSB fileSB, bool notifications) async {
     try {
-      AuthService authService = AuthService();
+      final directory = await getDownloadsDirectory();
+      final userId = AuthService().getCurrentUser().id;
 
-      Directory? directory;
-      // directory = await getApplicationDocumentsDirectory();
-      // print("directory: $directory");
-      directory = await getDownloadsDirectory();
-      if (kDebugMode) {
-        print("download directory: $directory");
-      }
-      // directory = await getExternalStorageDirectory();
-      // print("external directory: $directory");
-
-      final userId = authService.getCurrentUser().id;
       final targetDirPath = "${directory!.path}/$userId/${fileSB.path.split("/").first}";
-      if (kDebugMode) {
-        print("targetDirPath: $targetDirPath");
-      }
       final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
-      if (kDebugMode) {
-        print("fileFullPath: $fileFullPath");
-      }
+      final file = File(fileFullPath);
 
       await Directory(targetDirPath).create(recursive: true);
-      final filePath = fileFullPath;
-      final file = File(filePath);
 
       if (await file.exists()) {
-        notifications ? showCustomSnackBar(context, "O arquivo '${fileSB.name}' já existe.") : null;
+        if(!context.mounted) return;
+        handleFileAlreadyExists(context, fileSB.name, notifications);
         return;
       }
 
-      await requestStoragePermission();
+      // await requestStoragePermission();
 
-      if(!downloadedFiles.containsKey(fileSB.name)){
-        Uint8List? file = await fileService.getFile(fileSB.path);
-        downloadedFiles[fileSB.name] = file!;
+      if (!downloadedFiles.containsKey(fileSB.name)) {
+        Uint8List? fileData = await fileService.getFile(fileSB.path);
+        if (fileData == null) throw Exception("Failed to fetch file data");
+        downloadedFiles[fileSB.name] = fileData;
       }
 
       await file.writeAsBytes(downloadedFiles[fileSB.name]!);
-      if (kDebugMode) {
-        print("File downloaded to: ${file.path}");
-      }
 
-      if(notifications) {
-        // Mostra notificação de download
-        await Permission.notification.request().isGranted ? await flutterLocalNotificationsPlugin.show(
-          0,
-          'Download concluído',
-          fileSB.name,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'download_channel',
-              'Downloads',
-              importance: Importance.high,
-              priority: Priority.high,
-              playSound: true,
-              icon: '@mipmap/ic_launcher',
-            ),
-          ),
-          payload: filePath,
-        ) : null;
+      if (notifications) {
+        await showDownloadNotification(fileSB.name, file.path);
       }
+      if(!context.mounted) return;
+      handleDownloadSuccess(context, notifications);
 
-      notifications ? showCustomSnackBar(context, "File downloaded") : null;
     } catch (e) {
-      if (kDebugMode) {
-        print("Error downloading file: $e");
-      }
-      notifications ? showCustomSnackBar(context, "Error downloading file") : null;
+      handleDownloadError(context, notifications, e);
     }
+  }
+
+  void handleFileAlreadyExists(BuildContext context, String name, bool notifications) {
+    if (notifications) {
+      showCustomSnackBar(context, "O arquivo '$name' já existe.");
+    }
+  }
+
+  void handleDownloadSuccess(BuildContext context, bool notifications) {
+    if (notifications) {
+      showCustomSnackBar(context, "File downloaded");
+    }
+  }
+
+  void handleDownloadError(BuildContext context, bool notifications, Object e) {
+    if (notifications) {
+      showCustomSnackBar(context, "Error downloading file $e");
+    }
+  }
+
+  Future<void> showDownloadNotification(String fileName, String path) async {
+    final granted = await Permission.notification.request().isGranted;
+    if (!granted) return;
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Download concluído',
+      fileName,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'download_channel',
+          'Downloads',
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+      payload: path,
+    );
   }
 
   @override
@@ -181,6 +183,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ? IconButton(
                         onPressed: () async {
                           List<CategorySB> catValues = await categories;
+                          if(!context.mounted) return;
                           showDialog(
                               context: context,
                               builder: (BuildContext context) {
@@ -216,7 +219,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                           ///remove the selected category so the user cant transfer the files to the category being deleted
                           catValues.remove(selectedCategory);
-
+                          if(!context.mounted) return;
                           showDialog(
                               context: context,
                               builder: (BuildContext context) {
@@ -265,7 +268,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ElevatedButton(
                   onPressed: () async {
                     List<CategorySB> catValue = await categories;
-
+                    if(!context.mounted) return;
                     showDialog(
                       context: context,
                       builder: (BuildContext context) {
@@ -429,6 +432,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  void handleFileOpen(FileSB fileSB, Uint8List? fileBytes) {
+    Navigator.pop(context);
+
+    if (fileBytes == null) {
+      showCustomSnackBar(context, 'Could not download the file');
+      return;
+    }
+
+    downloadedFiles[fileSB.name] = fileBytes;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FilePage(fileSB: fileSB, file: fileBytes),
+      ),
+    );
+  }
+
   List<ListTile> buildFilesListTiles(List<FileSB> files) {
     List<ListTile> tiles = [];
 
@@ -481,28 +502,10 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                   Uint8List? file = await fileService.getFile(files[i].path);
 
-                  if (kDebugMode) {
-                    print(files[i].path);
-                  }
+                  debugPrint(files[i].path);
 
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    if (file == null) {
-                      showCustomSnackBar(
-                          context, 'Could not download the file');
-                      return;
-                    }
-
-                    downloadedFiles[files[i].name] = file;
-
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              FilePage(fileSB: files[i], file: file),
-                        ));
-                  }
+                  if (!mounted) return;
+                  handleFileOpen(files[i], file);
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -573,6 +576,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 final bool response =
                                     await fileService.deleteFile(fileSB);
                                 if (response) {
+                                  if(!context.mounted) return;
                                   Navigator.of(context).pop();
                                   showCustomSnackBar(context, "File deleted");
                                   setState(() {
@@ -581,7 +585,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   });
                                   return;
                                 }
-
+                                if(!context.mounted) return;
                                 Navigator.of(context).pop();
                                 showCustomSnackBar(context,
                                     "An error occurred when deleting the file");
@@ -653,7 +657,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 final bool response = await fileService.renameFile(
                                     fileSB,
                                     "${renameController.text.trim()}.${fileSB.extension}");
-
+                                if(!context.mounted) return;
                                 if (response) {
                                   Navigator.of(context).pop();
                                   showCustomSnackBar(context, "File renamed");
@@ -714,7 +718,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       PopupMenuItem(
         child: const Text("Download", style: TextStyle(color: Colors.black)),
         onTap: () async {
-          await downloadFile(fileSB, true);
+          await downloadFile(context,fileSB, true);
         },
       ),
     ];

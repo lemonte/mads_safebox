@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:mads_safebox/models/category.dart';
 import 'package:mads_safebox/services/category_service.dart';
@@ -19,6 +17,17 @@ class _CategoryRenameModalState extends State<CategoryRenameModal> {
   CategoryService categoryService = CategoryService();
   TextEditingController textController = TextEditingController();
   String infoText = "";
+
+  void handleCategoryRenameResult(dynamic response, String name) {
+    if (response) {
+      Navigator.of(context).pop(name);
+      showCustomSnackBar(context, "Category renamed");
+      return;
+    }
+    Navigator.of(context).pop();
+    showCustomSnackBar(context,
+        "An error occurred when renaming the category");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,14 +87,7 @@ class _CategoryRenameModalState extends State<CategoryRenameModal> {
 
                     final response = await categoryService.renameCategory(widget.selectedCategoryId, name);
 
-                    if (response) {
-                      Navigator.of(context).pop(name);
-                      showCustomSnackBar(context, "Category renamed");
-                      return;
-                    }
-                    Navigator.of(context).pop();
-                    showCustomSnackBar(context,
-                        "An error occurred when renaming the category");
+                    if(mounted) handleCategoryRenameResult(response, name);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,

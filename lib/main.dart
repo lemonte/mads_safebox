@@ -59,7 +59,17 @@ class MyApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
+        ),
+        dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
+        checkboxTheme: CheckboxThemeData(
+          fillColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return mainColor;
+            }
+            return Colors.white;
+          }),
+          checkColor: WidgetStateProperty.all(mainTextColor),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       home: const AuthWrapper(),

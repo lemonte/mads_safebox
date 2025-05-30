@@ -16,6 +16,8 @@ class LogoutButton extends ConsumerWidget {
       onPressed: () async {
         //ref.read(userProvider.notifier).state = null;
         await auth.signOut();
+        if(!context.mounted) return;
+        Navigator.pop(context);
       },
       style: ElevatedButton.styleFrom( backgroundColor: Colors.red,),
       child: const Icon(Icons.logout,color: Colors.black,),

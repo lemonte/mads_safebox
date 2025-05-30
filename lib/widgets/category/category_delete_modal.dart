@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:mads_safebox/global/default_category.dart';
 import 'package:mads_safebox/services/file_service.dart';
@@ -27,6 +25,18 @@ class _CategoryDeleteModalState extends State<CategoryDeleteModal> {
   TextEditingController textController = TextEditingController();
   String title = "Are you sure you want to delete this category?";
   bool isDeleting = false;
+
+  void handleCategoryDeletionResult(dynamic response, dynamic responseFiles) {
+    if (response && responseFiles) {
+      Navigator.of(context).pop(response);
+      showCustomSnackBar(context, "Category deleted");
+      return;
+    } else {
+      Navigator.of(context).pop();
+      showCustomSnackBar(
+          context, "An error occurred when deleting the category");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,15 +112,9 @@ class _CategoryDeleteModalState extends State<CategoryDeleteModal> {
                     widget.idCategoryToDelete, currentCategory.id);
                 final response = await categoryService
                     .deleteCategory(widget.idCategoryToDelete);
-
-                if (response && responseFiles) {
-                  Navigator.of(context).pop(response);
-                  showCustomSnackBar(context, "Category deleted");
-                  return;
+                if(mounted) {
+                  handleCategoryDeletionResult(response, responseFiles);
                 }
-                Navigator.of(context).pop();
-                showCustomSnackBar(
-                    context, "An error occurred when deleting the category");
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
