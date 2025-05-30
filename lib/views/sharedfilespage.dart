@@ -309,7 +309,6 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
 
                             if (!mounted) return;
                             showDownloadingDialog();
-
                             Uint8List? file = await fileService
                                 .getSharedFile(snapshot.data![i].fileSB.path, snapshot.data![i].sharedSB.uid);
 
