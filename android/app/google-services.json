@@ -12,7 +12,12 @@
           "package_name": "com.example.mads_safebox"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "270946605394-d49f4djvpau1a7e27bl9o23gs90dkqr7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBgVDTtRGLX1ViHN3sY-IKZK0Cm06qvOgw"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "270946605394-d49f4djvpau1a7e27bl9o23gs90dkqr7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "270946605394-6idoqgfnip0bojj9r6k388k08p7fs2vg.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.madsSafebox"
+              }
+            }
+          ]
         }
       }
     }
