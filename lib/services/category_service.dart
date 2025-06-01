@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:mads_safebox/global/default_category.dart';
 import 'package:mads_safebox/models/category.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../global/default_values.dart';
 
 class CategoryService {
   // This class is responsible for category operations
@@ -23,9 +24,7 @@ class CategoryService {
           .select();
       return CategorySB.fromJson(response.first);
     } catch (e) {
-      if (kDebugMode) {
-        print("Error creating category:\n$e\n");
-      }
+      debugPrint("Error creating category:\n$e\n");
       return null;
     }
   }
@@ -44,9 +43,7 @@ class CategoryService {
             .toList(),
       );
     } catch (e) {
-      if (kDebugMode) {
-        print("Erro ao obter categorias");
-      }
+      debugPrint("Erro ao obter categorias");
     }
     return categories;
   }
@@ -56,9 +53,7 @@ class CategoryService {
       await supabaseClient.from('categories').delete().eq("id", idToDelete);
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print("\nError when deleting category:\n$e\n");
-      }
+      debugPrint("\nError when deleting category:\n$e\n");
       return false;
     }
   }
@@ -70,9 +65,7 @@ class CategoryService {
           .update({"name": name}).eq("id", id);
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print("\nError when renaming category:\n$e\n");
-      }
+      debugPrint("\nError when renaming category:\n$e\n");
       return false;
     }
   }

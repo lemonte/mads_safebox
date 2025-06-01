@@ -8,8 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:mads_safebox/models/file.dart';
 import 'package:mads_safebox/services/sharefiles_service.dart';
 
+import '../global/default_values.dart';
 import '../config/env_config.dart';
-import '../global/colors.dart';
 import 'custom_snack_bar.dart';
 
 class FileShareModal extends StatefulWidget {

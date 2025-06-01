@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mads_safebox/global/colors.dart';
+import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:mads_safebox/widgets/custom_snack_bar.dart';
 import 'package:mads_safebox/widgets/loading.dart';

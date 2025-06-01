@@ -40,9 +40,7 @@ class AuthService {
         'name': name,
       });
     } on Exception catch (e) {
-      if(kDebugMode){
-        print("Error inserting user: $e");
-      }
+      debugPrint("Error inserting user: $e");
     }
     return authResponse;
   }
@@ -105,9 +103,7 @@ class AuthService {
         'name': user.nome,
       },onConflict: 'id',);
     } on Exception catch (e) {
-      if(kDebugMode) {
-        print("Error inserting user: $e");
-      }
+      debugPrint("Error inserting user: $e");
     }
   }
 
@@ -131,9 +127,7 @@ class AuthService {
             'name': user.userMetadata?['name'],
           }, onConflict: 'id');
         } catch (e) {
-          if(kDebugMode){
-            print("Error inserting user: $e");
-          }
+          debugPrint("Error inserting user: $e");
         }
       }
     });

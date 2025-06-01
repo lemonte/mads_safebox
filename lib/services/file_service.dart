@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:mads_safebox/models/sharedplusfile.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+
 
 import '../models/file.dart';
 
@@ -57,6 +59,23 @@ class FileService {
           .from(authService.getCurrentUser().id)
           .remove([fileSB.path]);
       await supabaseClient.from('files').delete().eq("id", fileSB.id);
+
+      //delete local file if exists
+      final directory = await getDownloadsDirectory();
+      final userId = authService.getCurrentUser().id;
+      final targetDirPath =
+          "${directory!.path}/$userId/${fileSB.path.split("/").first}";
+      final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
+      final file = File(fileFullPath);
+
+      if(await file.exists()) {
+        await file.delete();
+        Directory dir = Directory(targetDirPath);
+        if (await dir.list().isEmpty) {
+          await dir.delete();
+        }
+      }
+
       return true;
     } catch (e) {
       debugPrint("\nError when deleting file:\n$e\n");
@@ -94,7 +113,7 @@ class FileService {
           .from(authService.getCurrentUser().id)
           .download(path);//todo removi o transform porque dava erro com os pdfs
 
-      debugPrint("File downloaded: ${response.lengthInBytes} bytes");
+      debugPrint("$path downloaded: ${response.lengthInBytes} bytes");
 
       return response;
     } catch (e) {
@@ -189,5 +208,21 @@ class FileService {
 
       return [];
     }
+  }
+
+  Future<List<FileSB>> getAllFilesList(String uid) async {
+    List<FileSB> fileList = [];
+    try {
+      final response =
+          await supabaseClient.from('files').select().eq('uid', uid);
+
+      fileList.addAll(response.map((item) => FileSB.fromJson(item)).toList());
+
+
+    } catch (e) {
+        debugPrint(e.toString());
+        rethrow;
+    }
+    return fileList;
   }
 }

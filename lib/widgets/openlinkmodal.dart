@@ -10,8 +10,8 @@ import 'package:mads_safebox/views/filepage.dart';
 import 'package:mads_safebox/widgets/custom_snack_bar.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 
+import '../global/default_values.dart';
 import '../config/env_config.dart';
-import '../global/colors.dart';
 import '../models/role.dart';
 
 class OpenLinkModal extends StatefulWidget {

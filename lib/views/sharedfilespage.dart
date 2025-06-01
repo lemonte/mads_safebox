@@ -108,7 +108,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
               importance: Importance.high,
               priority: Priority.high,
               playSound: true,
-              icon: '@mipmap/ic_launcher',
+              icon: '@mipmap/launcher_icon',
             ),
           ),
           payload: filePath,
@@ -266,7 +266,6 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
             children: [
               for (int i = 0; i < snapshot.data!.length; i++)
                 ListTile(
-                  //TODO: implementar o menu (mudar o on tap para a row do icon e imagem)
                   title: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
