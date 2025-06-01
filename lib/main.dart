@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/config/env_config.dart';
-import 'package:mads_safebox/global/colors.dart';
+import 'package:mads_safebox/global/default_values.dart';
+import 'package:mads_safebox/services/background_service.dart';
+import 'package:mads_safebox/services/category_box_service.dart';
 import 'package:mads_safebox/widgets/auth_wrapper.dart';
 import 'package:open_file/open_file.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -40,6 +43,11 @@ void main() async {
       }
     },
   );
+
+  await initializeService();
+  await CategoryBoxService.init();
+  await Permission.notification.request();
+
   runApp(const ProviderScope(child: MyApp()));
 }
 

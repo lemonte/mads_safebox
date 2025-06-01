@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../global/colors.dart';
+import '../global/default_values.dart';
 
 void showCustomSnackBar(BuildContext context, String text) {
   final snackBar = SnackBar(

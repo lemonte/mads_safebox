@@ -20,8 +20,11 @@ Widget buildCategoryDropdown({
         return const Text("No categories found, showing all files.");
       }
 
+
+
       final categories = snapshot.data!;
       final currentCategory = selectedCategory ?? categories.first;
+
 
       return Flexible(
         fit: FlexFit.loose,

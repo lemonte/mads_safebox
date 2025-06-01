@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mads_safebox/global/default_category.dart';
 import 'package:mads_safebox/services/file_service.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 
+import '../../global/default_values.dart';
 import '../../models/category.dart';
 import '../../services/category_service.dart';
 import '../custom_snack_bar.dart';
