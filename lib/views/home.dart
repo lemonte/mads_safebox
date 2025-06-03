@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/global/default_values.dart';
@@ -17,11 +16,11 @@ import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../global/bg_service_invokes.dart';
 import '../models/category.dart';
 import '../models/file.dart';
 import '../services/auth_service.dart';
 import '../services/file_service.dart';
+import '../services/user_box_service.dart';
 import '../widgets/category/category_dropdownbutton.dart';
 import '../widgets/category/category_rename_modal.dart';
 import '../widgets/custom_snack_bar.dart';
@@ -38,8 +37,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   AuthService authService = AuthService();
   FileService fileService = FileService();
   CategoryService categoryService = CategoryService();
-  CategoryBoxService categoryBoxService = CategoryBoxService();
-  FlutterBackgroundService backgroundService = FlutterBackgroundService();
 
   bool isShowingImages = true;
   TextEditingController renameController = TextEditingController();
@@ -58,14 +55,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
 
-    initBGServiceTasks();
-
     initValues();
+    initAsyncValues();
 
     categories.then((value) {
       setState(() {
-        favoriteCategoryId = categoryBoxService
-            .getFavoriteCategory(authService.getCurrentUser().id);
+        favoriteCategoryId = CategoryBoxService.getFavoriteCategory(
+            authService.getCurrentUser().id);
         selectedCategory = value.firstWhere(
           (element) => element.id == favoriteCategoryId,
           orElse: () => defaultCategory,
@@ -173,56 +169,22 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Future<void> initValues() async {
+  Future<void> initAsyncValues() async {
     categories = categoryService.getCategories();
     images = fileService.getImageList();
     docs = fileService.getDocList();
   }
 
-  void initBGServiceTasks() {
-    ///Add user to bg service hive box
-    ///Only initializes, if it already exists then nothing happens
-    backgroundService.invoke(invokeAddUser, {
-      userboxKeyUid: authService.getCurrentUser().id,
-      userboxKeyUsername: authService.getCurrentUser().nome
-    });
+  void initValues() {
+    ///Add user to hive box
+    UserBoxService.addUserData(
+        authService.getCurrentUser().id, authService.getCurrentUser().nome);
 
-    ///Get current allowDownloadWithMobileData value from bg service when called from service
-    ///first start listening for response
-    backgroundService
-        .on(invokeRespondWithDownloadWithMobileDataToApp)
-        .listen((data) {
-      if (data != null) {
-        if (mounted) {
-          setState(() {
-            allowDownloadWithMobileData =
-                data[userboxKeyDownloadWithMobileData];
-          });
-        }
-      }
-    });
+    autoSyncEnabled =
+        UserBoxService.getAutoSync(authService.getCurrentUser().id);
 
-    ///then call the bg service to get the value
-    backgroundService.invoke(invokeGetDownloadWithMobileDataFromApp,
-        {userboxKeyUid: authService.getCurrentUser().id});
-
-    ///Get current AutoSync value from bg service when called from service
-    ///first start listening for response
-    backgroundService.on(invokeRespondWithAutoSyncToApp).listen((data) {
-      if (data != null) {
-        if (mounted) {
-          setState(() {
-            autoSyncEnabled = data[userboxKeyAutoSync];
-          });
-        }
-      }
-    });
-
-    ///then call the bg service to get the value
-    backgroundService.invoke(invokeGetAutoSyncFromApp,
-        {userboxKeyUid: authService.getCurrentUser().id});
-
-    backgroundService.invoke(invokeSynchronize);
+    allowDownloadWithMobileData = UserBoxService.getAllowDownloadWithMobileData(
+        authService.getCurrentUser().id);
   }
 
   @override
@@ -233,28 +195,16 @@ class _HomePageState extends ConsumerState<HomePage> {
         autoSyncEnabled: autoSyncEnabled,
         allowDownloadWithMobileData: allowDownloadWithMobileData,
         onToggleAutoSync: () async {
-          backgroundService.invoke(
-            invokeUpdateAutoSyncPreference,
-            {
-              userboxKeyUid: authService.getCurrentUser().id,
-              userboxKeyAutoSync: !autoSyncEnabled
-            },
-          );
-
-          if (!autoSyncEnabled) backgroundService.invoke(invokeSynchronize);
+          UserBoxService.updateAutoSyncPreference(
+              authService.getCurrentUser().id, !autoSyncEnabled);
 
           setState(() {
             autoSyncEnabled = !autoSyncEnabled;
           });
         },
         onToggleDownloadWithMobileData: () async {
-          backgroundService.invoke(
-            invokeUpdateDownloadWithMobileData,
-            {
-              userboxKeyUid: authService.getCurrentUser().id,
-              userboxKeyDownloadWithMobileData: !allowDownloadWithMobileData
-            },
-          );
+          UserBoxService.updateAllowDownloadWithMobileData(
+              authService.getCurrentUser().id, !allowDownloadWithMobileData);
 
           setState(() {
             allowDownloadWithMobileData = !allowDownloadWithMobileData;
@@ -346,7 +296,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           builder: (context) => const UploadFilesPage(),
                         )).then((value) {
                       setState(() {
-                        initValues();
+                        initAsyncValues();
                       });
                     });
                   },
@@ -393,17 +343,15 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  List<Widget> buildCategoryActionButtons(BuildContext context){
+  List<Widget> buildCategoryActionButtons(BuildContext context) {
     List<Widget> buttonList = [];
 
-    if (
-    selectedCategory.id != favoriteCategoryId) {
+    if (selectedCategory.id != favoriteCategoryId) {
       buttonList.add(InkWell(
         onTap: () {
           ///guardar a categoria fav
-          categoryBoxService.saveFavoriteCategory(
-              authService.getCurrentUser().id,
-              selectedCategory.id);
+          CategoryBoxService.saveFavoriteCategory(
+              authService.getCurrentUser().id, selectedCategory.id);
           favoriteCategoryId = selectedCategory.id;
           setState(() {});
         },
@@ -414,9 +362,8 @@ class _HomePageState extends ConsumerState<HomePage> {
       ));
     } else {
       buttonList.add(InkWell(
-
         onTap: () {
-          categoryBoxService.saveFavoriteCategory(
+          CategoryBoxService.saveFavoriteCategory(
               authService.getCurrentUser().id, 1);
           favoriteCategoryId = 1;
           setState(() {});
@@ -445,8 +392,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (value != null) {
               selectedCategory.name = value;
               (await categories)
-                  .firstWhere((element) =>
-              element.id == selectedCategory.id)
+                  .firstWhere((element) => element.id == selectedCategory.id)
                   .name = value;
               setState(() {});
             }
@@ -475,7 +421,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (value != null) {
               (await categories).remove(selectedCategory);
               selectedCategory = (await categories).first;
-              categoryBoxService.saveFavoriteCategory(
+              CategoryBoxService.saveFavoriteCategory(
                   authService.getCurrentUser().id, 1);
               favoriteCategoryId = 1;
               setState(() {});
@@ -617,7 +563,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: GestureDetector(
                 onTap: () async {
                   if (downloadedFiles.containsKey(files[i].name)) {
-                    navigateToFilePage(downloadedFiles[files[i].name]!, files[i]);
+                    navigateToFilePage(
+                        downloadedFiles[files[i].name]!, files[i]);
                     return;
                   }
 
@@ -625,11 +572,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Directory? directory;
                     directory = await getDownloadsDirectory();
                     final userId = authService.getCurrentUser().id;
-                    final targetDirPath = "${directory!.path}/$userId/${files[i].path.split("/").first}";
-                    final fileFullPath = "$targetDirPath/${files[i].path.split("/").last}";
+                    final targetDirPath =
+                        "${directory!.path}/$userId/${files[i].path.split("/").first}";
+                    final fileFullPath =
+                        "$targetDirPath/${files[i].path.split("/").last}";
                     final filePath = fileFullPath;
                     final downloadedFile = File(filePath);
-                    if(await downloadedFile.exists()){
+                    if (await downloadedFile.exists()) {
                       final fileBytes = await downloadedFile.readAsBytes();
                       if (!mounted) return;
                       navigateToFilePage(fileBytes, files[i]);
