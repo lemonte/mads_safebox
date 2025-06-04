@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import 'package:mads_safebox/models/role.dart';
 import 'package:mads_safebox/models/shared.dart';
 import 'package:mads_safebox/services/auth_service.dart';
@@ -106,47 +107,46 @@ class _FilePageState extends State<FilePage> {
 
   Widget buildFileView() {
     if (widget.fileSB.extension != "pdf") {
-      return SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        FullscreenImageViewer(imageData: widget.file),
-                  ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      FullscreenImageViewer(imageData: widget.file),
+                ),
+              );
+            },
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Image.memory(
+                  widget.file,
+                  fit: BoxFit.contain,
+                  width: constraints.maxWidth,
                 );
               },
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Image.memory(
-                    widget.file,
-                    fit: BoxFit.contain,
-                    width: constraints.maxWidth,
-                  );
-                },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(widget.fileSB.name,
+                style: const TextStyle(fontSize: 16)),
+          ),
+          const SizedBox(height: 16),
+          const Center(
+            child: Text(
+              "Tap the image for FullScreen",
+              style: TextStyle(
+                fontSize: 20,
+                color: mainColor,
               ),
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(widget.fileSB.name,
-                  style: const TextStyle(fontSize: 16)),
-            ),
-            const SizedBox(height: 16),
-            const Center(
-              child: Text(
-                "Tap the image for FullScreen",
-                style: TextStyle(
-                  fontSize: 20,
-                  color: mainColor,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
     return Expanded(
@@ -221,8 +221,24 @@ class _FilePageState extends State<FilePage> {
               ],
             ),
             Divider(thickness: 1, color: Colors.grey.shade300),
+            Visibility(
+              visible: widget.fileSB.expireDate != null,
+              child: Text(
+                "Expire date: ${DateFormat(dateFormatToDisplay).format(widget.fileSB.expireDate ?? DateTime.now())}",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                const TextStyle(color: Colors.grey),
+              ),
+            ),
             const SizedBox(height: 8),
-            buildFileView(),
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: buildFileView(),
+                ),
+              ),
+            ),
           ],
         ),
       ),

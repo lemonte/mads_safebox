@@ -9,9 +9,9 @@ import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/services/category_box_service.dart';
 import 'package:mads_safebox/services/category_service.dart';
 import 'package:mads_safebox/views/filepage.dart';
+import 'package:mads_safebox/views/reminderspage.dart';
 import 'package:mads_safebox/views/sharedfilespage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
-import 'package:mads_safebox/widgets/category/category_create_modal.dart';
 import 'package:mads_safebox/widgets/category/category_delete_modal.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
@@ -22,9 +22,11 @@ import '../models/category.dart';
 import '../models/file.dart';
 import '../services/auth_service.dart';
 import '../services/file_service.dart';
+import '../widgets/actionbuttonsrow.dart';
 import '../widgets/category/category_dropdownbutton.dart';
-import '../widgets/category/category_rename_modal.dart';
+import '../widgets/category/category_name_modal.dart';
 import '../widgets/custom_snack_bar.dart';
+import '../widgets/expire_date_change_modal.dart';
 import '../widgets/sharefilemodal.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -309,18 +311,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ElevatedButton(
                   onPressed: () async {
                     List<CategorySB> catValue = await categories;
-                    if (!context.mounted) return;
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return CategoryCreateModal(categories: catValue);
-                      },
-                    ).then((value) async {
-                      if (value != null) {
-                        (await categories).add(value);
-                        setState(() {});
-                      }
-                    });
+                    _showCreateCategoryDialog(catValue);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: mainColor,
@@ -367,25 +358,50 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SharedFilesPage(),
-                    ));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: mainColor,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
-              ),
-              child: const Text(
-                "View Shared Files",
-                style: TextStyle(color: mainTextColor),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SharedFilesPage(),
+                        ));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mainColor,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: const Text(
+                    "View Shared Files",
+                    style: TextStyle(color: mainTextColor),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RemindersPage(),
+                        ));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mainColor,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: const Text(
+                    "View Reminders",
+                    style: TextStyle(color: mainTextColor),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -393,17 +409,15 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  List<Widget> buildCategoryActionButtons(BuildContext context){
+  List<Widget> buildCategoryActionButtons(BuildContext context) {
     List<Widget> buttonList = [];
 
-    if (
-    selectedCategory.id != favoriteCategoryId) {
+    if (selectedCategory.id != favoriteCategoryId) {
       buttonList.add(InkWell(
         onTap: () {
           ///guardar a categoria fav
           categoryBoxService.saveFavoriteCategory(
-              authService.getCurrentUser().id,
-              selectedCategory.id);
+              authService.getCurrentUser().id, selectedCategory.id);
           favoriteCategoryId = selectedCategory.id;
           setState(() {});
         },
@@ -414,7 +428,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       ));
     } else {
       buttonList.add(InkWell(
-
         onTap: () {
           categoryBoxService.saveFavoriteCategory(
               authService.getCurrentUser().id, 1);
@@ -435,18 +448,19 @@ class _HomePageState extends ConsumerState<HomePage> {
           List<CategorySB> catValues = await categories;
           if (!context.mounted) return;
           showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return CategoryRenameModal(
-                  categories: catValues,
-                  selectedCategoryId: selectedCategory.id,
-                );
-              }).then((value) async {
+            context: context,
+            builder: (context) => CategoryNameModal(
+              categories: catValues,
+              title: "Write the new category name",
+              confirmText: "Rename Category",
+              initialName: selectedCategory.name,
+              onSubmit: (name) => categoryService.renameCategory(selectedCategory.id, name),
+            ),
+          ).then((value) async {
             if (value != null) {
               selectedCategory.name = value;
               (await categories)
-                  .firstWhere((element) =>
-              element.id == selectedCategory.id)
+                  .firstWhere((element) => element.id == selectedCategory.id)
                   .name = value;
               setState(() {});
             }
@@ -617,7 +631,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: GestureDetector(
                 onTap: () async {
                   if (downloadedFiles.containsKey(files[i].name)) {
-                    navigateToFilePage(downloadedFiles[files[i].name]!, files[i]);
+                    navigateToFilePage(
+                        downloadedFiles[files[i].name]!, files[i]);
                     return;
                   }
 
@@ -625,11 +640,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Directory? directory;
                     directory = await getDownloadsDirectory();
                     final userId = authService.getCurrentUser().id;
-                    final targetDirPath = "${directory!.path}/$userId/${files[i].path.split("/").first}";
-                    final fileFullPath = "$targetDirPath/${files[i].path.split("/").last}";
+                    final targetDirPath =
+                        "${directory!.path}/$userId/${files[i].path.split("/").first}";
+                    final fileFullPath =
+                        "$targetDirPath/${files[i].path.split("/").last}";
                     final filePath = fileFullPath;
                     final downloadedFile = File(filePath);
-                    if(await downloadedFile.exists()){
+                    if (await downloadedFile.exists()) {
                       final fileBytes = await downloadedFile.readAsBytes();
                       if (!mounted) return;
                       navigateToFilePage(fileBytes, files[i]);
@@ -731,54 +748,27 @@ class _HomePageState extends ConsumerState<HomePage> {
                         const Text(
                             "Are you sure you want to delete this file?"),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                final bool response =
-                                    await fileService.deleteFile(fileSB);
-                                if (response) {
-                                  if (!context.mounted) return;
-                                  Navigator.of(context).pop();
-                                  showCustomSnackBar(context, "File deleted");
-                                  setState(() {
-                                    images = fileService.getImageList();
-                                    docs = fileService.getDocList();
-                                  });
-                                  return;
-                                }
-                                if (!context.mounted) return;
-                                Navigator.of(context).pop();
-                                showCustomSnackBar(context,
-                                    "An error occurred when deleting the file");
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Delete'),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
+                        ActionButtonsRow(
+                          confirmText: 'Delete',
+                          onConfirm: () async {
+                            final bool response =
+                            await fileService.deleteFile(fileSB);
+                            if (response) {
+                              if (!context.mounted) return;
+                              Navigator.of(context).pop();
+                              showCustomSnackBar(context, "File deleted");
+                              setState(() {
+                                images = fileService.getImageList();
+                                docs = fileService.getDocList();
+                              });
+                              return;
+                            }
+                            if (!context.mounted) return;
+                            Navigator.of(context).pop();
+                            showCustomSnackBar(context,
+                                "An error occurred when deleting the file");
+                          },
+                          onCancel: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
@@ -812,60 +802,49 @@ class _HomePageState extends ConsumerState<HomePage> {
                           controller: renameController,
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                final bool response = await fileService.renameFile(
-                                    fileSB,
-                                    "${renameController.text.trim()}.${fileSB.extension}");
-                                if (!context.mounted) return;
-                                if (response) {
-                                  Navigator.of(context).pop();
-                                  showCustomSnackBar(context, "File renamed");
-                                  setState(() {
-                                    images = fileService.getImageList();
-                                    docs = fileService.getDocList();
-                                  });
-                                  return;
-                                }
-                                Navigator.of(context).pop();
-                                showCustomSnackBar(context,
-                                    "An error occurred when renaming the file");
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Rename'),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
+                        ActionButtonsRow(
+                          confirmText: 'Rename',
+                          onConfirm: () async {
+                            final bool response = await fileService.renameFile(
+                                fileSB,
+                                "${renameController.text.trim()}.${fileSB.extension}");
+                            if (!context.mounted) return;
+                            if (response) {
+                              Navigator.of(context).pop();
+                              showCustomSnackBar(context, "File renamed");
+                              setState(() {
+                                images = fileService.getImageList();
+                                docs = fileService.getDocList();
+                              });
+                              return;
+                            }
+                            Navigator.of(context).pop();
+                            showCustomSnackBar(context,
+                                "An error occurred when renaming the file");
+                          },
+                          onCancel: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
                   ),
                 );
               });
+        },
+      ),
+      PopupMenuItem(
+        child: const Text("Change Expire Date",
+            style: TextStyle(color: Colors.black)),
+        onTap: () async {
+          showDialog(
+              context: context,
+              builder: (context) {
+                return ExpireDateChangeModal(fileSB: fileSB);
+              }).whenComplete(() {
+            setState(() {
+              docs = fileService.getDocList();
+              images = fileService.getImageList();
+            });
+          });
         },
       ),
       PopupMenuItem(
@@ -885,5 +864,22 @@ class _HomePageState extends ConsumerState<HomePage> {
         },
       ),
     ];
+  }
+
+  void _showCreateCategoryDialog(List<CategorySB> catValue) {
+    showDialog(
+      context: context,
+      builder: (context) => CategoryNameModal(
+        categories: catValue,
+        title: "Write a unique category name",
+        confirmText: "Create Category",
+        onSubmit: (name) => categoryService.createCategory(name),
+      ),
+    ).then((value) async {
+      if (value != null) {
+        (await categories).add(value);
+        setState(() {});
+      }
+    });
   }
 }

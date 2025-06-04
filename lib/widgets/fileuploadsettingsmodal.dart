@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mads_safebox/services/category_service.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 
 import '../models/category.dart';
 import '../services/file_service.dart';
-import 'category/category_create_modal.dart';
 import 'category/category_dropdownbutton.dart';
+import 'category/category_name_modal.dart';
 import 'custom_snack_bar.dart';
+import 'expiredateoptions.dart';
 
 class FileUploadSettingsModal extends StatefulWidget {
   final List<File> selectedFiles;
@@ -25,9 +25,19 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
   FileService fileService = FileService();
   DateTime? expiringDate;
   bool isUploading = false;
+  bool noExpiration = true;
   late Future<List<CategorySB>> categories;
 
   CategorySB? selectedCategory;
+
+  Duration? selectedDuration;
+
+  final Map<String, Duration?> options = {
+    'No Notification': null,
+    '1 Day Before': const Duration(days: 1),
+    '1 Week Before': const Duration(days: 7),
+    '1 Month Before': const Duration(days: 31),
+  };
 
   @override
   void initState() {
@@ -42,17 +52,15 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
       });
 
       try {
-        await fileService.uploadFile(
-            widget.selectedFiles, selectedCategory?.id ?? defaultCategoryID, expiringDate);
+        await fileService.uploadFile(widget.selectedFiles,
+            selectedCategory?.id ?? defaultCategoryID, expiringDate, selectedDuration != null ? expiringDate!.subtract(selectedDuration!) : null);
 
         if (!mounted) return;
         showCustomSnackBar(context, "Files uploaded successfully");
         Navigator.pop(context);
-
       } catch (e) {
         debugPrint("Error uploading file: $e");
         showCustomSnackBar(context, "Error uploading file: $e");
-
       }
       Navigator.pop(context);
       setState(() {
@@ -83,15 +91,15 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
             const SizedBox(height: 16),
 
             // Category Dropdown
-          buildCategoryDropdown(
-            categoriesFuture: categories,
-            selectedCategory: selectedCategory,
-            onChanged: (CategorySB? value) {
-              setState(() {
-                selectedCategory = value;
-              });
-            },
-          ),
+            buildCategoryDropdown(
+              categoriesFuture: categories,
+              selectedCategory: selectedCategory,
+              onChanged: (CategorySB? value) {
+                setState(() {
+                  selectedCategory = value;
+                });
+              },
+            ),
 
             // Create new category button
             Align(
@@ -105,7 +113,7 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey.shade300,
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),
@@ -117,51 +125,20 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
             ),
 
             const SizedBox(height: 16),
-            const Text('Expiring Date'),
-            const SizedBox(height: 4),
-
-            // Date Picker
-            GestureDetector(
-              onTap: () async {
-                final DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: expiringDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    expiringDate = pickedDate;
-                  });
-                }
+            ExpireDateOptions(
+              noExpiration: noExpiration,
+              expiringDate: expiringDate,
+              selectedDuration: selectedDuration,
+              onExpirationChanged: (value) {
+                setState(() {
+                  noExpiration = value;
+                  expiringDate = value ? null : DateTime.now().add(const Duration(days: 1));
+                  if (value) selectedDuration = null;
+                });
               },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      expiringDate != null
-                          ? DateFormat('dd/MM/yyyy').format(expiringDate!)
-                          : 'dd/mm/yyyy',
-                      style: TextStyle(
-                        color:
-                            expiringDate != null ? Colors.black : Colors.grey,
-                      ),
-                    ),
-                    const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                  ],
-                ),
-              ),
+              onDurationChanged: (value) => setState(() => selectedDuration = value),
+              onDatePicked: (picked) => setState(() => expiringDate = picked),
             ),
-
-            const SizedBox(height: 24),
-
             // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -208,9 +185,12 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
   void _showCreateCategoryDialog(List<CategorySB> catValue) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return CategoryCreateModal(categories: catValue);
-      },
+      builder: (context) => CategoryNameModal(
+        categories: catValue,
+        title: "Write a unique category name",
+        confirmText: "Create Category",
+        onSubmit: (name) => categoryService.createCategory(name),
+      ),
     ).then((value) async {
       if (value != null) {
         (await categories).add(value);
@@ -221,5 +201,4 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
       }
     });
   }
-
 }

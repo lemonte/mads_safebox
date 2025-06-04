@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/models/role.dart';
 import 'package:mads_safebox/models/shared.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,7 +18,7 @@ class ShareFilesService {
       debugPrint('Error: Role must be either "View" or "Download".');
       throw Exception('Role must be either "View" or "Download".');
     }
-    var expireDateToSupabase = DateFormat('yyyy-MM-dd').format(expireDate);
+    var expireDateToSupabase = DateFormat(dateFormatToSupabase).format(expireDate);
     debugPrint(role.name);
     try {
       await Supabase.instance.client
@@ -84,7 +85,7 @@ class ShareFilesService {
           .from('shared')
           .select()
           .contains('sharedWith', [Supabase.instance.client.auth.currentUser!.id])
-          .gte('expire_date', DateFormat('yyyy-MM-dd').format(DateTime.now()));
+          .gte('expire_date', DateFormat(dateFormatToSupabase).format(DateTime.now()));
       final List<SharedSB> sharedList = (response)
           .map((item) => SharedSB.fromJson(item))
           .toList();
