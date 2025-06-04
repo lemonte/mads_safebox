@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../global/default_values.dart';
+import '../../global/default_values.dart';
 
 class ExpireDateOptions extends StatelessWidget {
   final bool noExpiration;
   final DateTime? expiringDate;
   final Duration? selectedDuration;
-  final Function(bool) onExpirationChanged;
-  final Function(Duration?) onDurationChanged;
-  final Function() onPickDate;
+  final void Function(bool) onExpirationChanged;
+  final void Function(Duration?) onDurationChanged;
+  final void Function(DateTime) onDatePicked;
 
   final Map<String, Duration?> options = const {
     'No Notification': null,
@@ -24,8 +24,20 @@ class ExpireDateOptions extends StatelessWidget {
     required this.selectedDuration,
     required this.onExpirationChanged,
     required this.onDurationChanged,
-    required this.onPickDate,
+    required this.onDatePicked,
   });
+
+  void _handlePickDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: expiringDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      onDatePicked(picked);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +48,7 @@ class ExpireDateOptions extends StatelessWidget {
         const SizedBox(height: 4),
         GestureDetector(
           onTap: () {
-            if (!noExpiration) {
-              onPickDate();
-            }
+            if (!noExpiration) _handlePickDate(context);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

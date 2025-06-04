@@ -5,8 +5,8 @@ import 'package:mads_safebox/widgets/loading.dart';
 
 import '../models/category.dart';
 import '../services/file_service.dart';
-import 'category/category_create_modal.dart';
 import 'category/category_dropdownbutton.dart';
+import 'category/category_name_modal.dart';
 import 'custom_snack_bar.dart';
 import 'expiredateoptions.dart';
 
@@ -132,31 +132,13 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
               onExpirationChanged: (value) {
                 setState(() {
                   noExpiration = value;
-                  expiringDate =
-                  value ? null : DateTime.now().add(const Duration(days: 1));
+                  expiringDate = value ? null : DateTime.now().add(const Duration(days: 1));
                   if (value) selectedDuration = null;
                 });
               },
-              onDurationChanged: (value) {
-                setState(() {
-                  selectedDuration = value;
-                });
-              },
-              onPickDate: () async {
-                final DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: expiringDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    expiringDate = pickedDate;
-                  });
-                }
-              },
+              onDurationChanged: (value) => setState(() => selectedDuration = value),
+              onDatePicked: (picked) => setState(() => expiringDate = picked),
             ),
-
             // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -203,9 +185,12 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
   void _showCreateCategoryDialog(List<CategorySB> catValue) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return CategoryCreateModal(categories: catValue);
-      },
+      builder: (context) => CategoryNameModal(
+        categories: catValue,
+        title: "Write a unique category name",
+        confirmText: "Create Category",
+        onSubmit: (name) => categoryService.createCategory(name),
+      ),
     ).then((value) async {
       if (value != null) {
         (await categories).add(value);

@@ -12,7 +12,6 @@ import 'package:mads_safebox/views/filepage.dart';
 import 'package:mads_safebox/views/reminderspage.dart';
 import 'package:mads_safebox/views/sharedfilespage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
-import 'package:mads_safebox/widgets/category/category_create_modal.dart';
 import 'package:mads_safebox/widgets/category/category_delete_modal.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
@@ -25,7 +24,7 @@ import '../services/auth_service.dart';
 import '../services/file_service.dart';
 import '../widgets/actionbuttonsrow.dart';
 import '../widgets/category/category_dropdownbutton.dart';
-import '../widgets/category/category_rename_modal.dart';
+import '../widgets/category/category_name_modal.dart';
 import '../widgets/custom_snack_bar.dart';
 import '../widgets/expire_date_change_modal.dart';
 import '../widgets/sharefilemodal.dart';
@@ -312,18 +311,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ElevatedButton(
                   onPressed: () async {
                     List<CategorySB> catValue = await categories;
-                    if (!context.mounted) return;
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return CategoryCreateModal(categories: catValue);
-                      },
-                    ).then((value) async {
-                      if (value != null) {
-                        (await categories).add(value);
-                        setState(() {});
-                      }
-                    });
+                    _showCreateCategoryDialog(catValue);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: mainColor,
@@ -460,13 +448,15 @@ class _HomePageState extends ConsumerState<HomePage> {
           List<CategorySB> catValues = await categories;
           if (!context.mounted) return;
           showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return CategoryRenameModal(
-                  categories: catValues,
-                  selectedCategoryId: selectedCategory.id,
-                );
-              }).then((value) async {
+            context: context,
+            builder: (context) => CategoryNameModal(
+              categories: catValues,
+              title: "Write the new category name",
+              confirmText: "Rename Category",
+              initialName: selectedCategory.name,
+              onSubmit: (name) => categoryService.renameCategory(selectedCategory.id, name),
+            ),
+          ).then((value) async {
             if (value != null) {
               selectedCategory.name = value;
               (await categories)
@@ -874,5 +864,22 @@ class _HomePageState extends ConsumerState<HomePage> {
         },
       ),
     ];
+  }
+
+  void _showCreateCategoryDialog(List<CategorySB> catValue) {
+    showDialog(
+      context: context,
+      builder: (context) => CategoryNameModal(
+        categories: catValue,
+        title: "Write a unique category name",
+        confirmText: "Create Category",
+        onSubmit: (name) => categoryService.createCategory(name),
+      ),
+    ).then((value) async {
+      if (value != null) {
+        (await categories).add(value);
+        setState(() {});
+      }
+    });
   }
 }

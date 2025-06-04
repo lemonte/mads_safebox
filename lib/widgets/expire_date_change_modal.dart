@@ -88,29 +88,12 @@ class _ExpireDateChangeModalState extends State<ExpireDateChangeModal> {
               onExpirationChanged: (value) {
                 setState(() {
                   noExpiration = value;
-                  expiringDate =
-                  value ? null : DateTime.now().add(const Duration(days: 1));
+                  expiringDate = value ? null : DateTime.now().add(const Duration(days: 1));
                   if (value) selectedDuration = null;
                 });
               },
-              onDurationChanged: (value) {
-                setState(() {
-                  selectedDuration = value;
-                });
-              },
-              onPickDate: () async {
-                final DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: expiringDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    expiringDate = pickedDate;
-                  });
-                }
-              },
+              onDurationChanged: (value) => setState(() => selectedDuration = value),
+              onDatePicked: (picked) => setState(() => expiringDate = picked),
             ),
             _buildSubmitButton(),
           ],
