@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/models/sharedplusfile.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,9 +46,9 @@ class FileService {
         debugPrint("File uploaded: $response");
 
         var expireDateToSupabase =
-            DateFormat('yyyy-MM-dd').format(expiringDate ?? DateTime.now());
+            DateFormat(dateFormatToSupabase).format(expiringDate ?? DateTime.now());
         var notificationDateToSupabase =
-            DateFormat('yyyy-MM-dd').format(notificationDate ?? DateTime.now());
+            DateFormat(dateFormatToSupabase).format(notificationDate ?? DateTime.now());
         await supabaseClient.from('files').insert({
           'uid': authService.getCurrentUser().id,
           'name': file.path.split('/').last,
@@ -263,9 +264,9 @@ class FileService {
       int fileId, DateTime? newExpireDate, DateTime? notificationDate) async {
     try {
       var expireDateToSupabase =
-          DateFormat('yyyy-MM-dd').format(newExpireDate ?? DateTime.now());
+          DateFormat(dateFormatToSupabase).format(newExpireDate ?? DateTime.now());
       var notificationDateToSupabase =
-          DateFormat('yyyy-MM-dd').format(notificationDate ?? DateTime.now());
+          DateFormat(dateFormatToSupabase).format(notificationDate ?? DateTime.now());
 
       await supabaseClient.from('files').update({
         'expire_date':

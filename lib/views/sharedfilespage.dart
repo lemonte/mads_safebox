@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/models/sharedplusfile.dart';
 import 'package:mads_safebox/services/sharefiles_service.dart';
 import 'package:mads_safebox/views/filepage.dart';
@@ -13,6 +14,7 @@ import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../global/download_utils.dart';
 import '../models/file.dart';
 import '../models/role.dart';
 import '../models/shared.dart';
@@ -56,72 +58,59 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
   Future<void> downloadFile(FileSB fileSB, bool notifications) async {
     try {
       AuthService authService = AuthService();
-
-      Directory? directory;
-      // directory = await getApplicationDocumentsDirectory();
-      // print("directory: $directory");
-      directory = await getDownloadsDirectory();
+      Directory? directory = await getDownloadsDirectory();
       debugPrint("download directory: $directory");
 
-      // directory = await getExternalStorageDirectory();
-      // print("external directory: $directory");
-
       final userId = authService.getCurrentUser().id;
-      final targetDirPath = "${directory!.path}/$userId/${fileSB.path.split("/").first}";
-      debugPrint("targetDirPath: $targetDirPath");
-
+      final targetDirPath =
+          "${directory!.path}/$userId/${fileSB.path.split("/").first}";
       final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
-      debugPrint("fileFullPath: $fileFullPath");
-
-      await Directory(targetDirPath).create(recursive: true);
-      final filePath = fileFullPath;
-      final file = File(filePath);
+      final file = File(fileFullPath);
 
       if (await file.exists()) {
         if (!mounted) return;
-        notifications
-            ? showCustomSnackBar(
-                context, "O arquivo '${fileSB.name}' já existe.")
-            : null;
+        if (notifications) {
+          showCustomSnackBar(context, "O arquivo '${fileSB.name}' já existe.");
+        }
         return;
       }
 
-      // await requestStoragePermission();
-
       if (!downloadedFiles.containsKey(fileSB.name)) {
-        Uint8List? file = await fileService.getFile(fileSB.path);
-        downloadedFiles[fileSB.name] = file!;
+        Uint8List? downloaded = await fileService.getFile(fileSB.path);
+        if (downloaded != null) downloadedFiles[fileSB.name] = downloaded;
       }
 
+      await Directory(targetDirPath).create(recursive: true);
       await file.writeAsBytes(downloadedFiles[fileSB.name]!);
-      debugPrint("File downloaded to: ${file.path}");
 
       if (notifications) {
-        // Mostra notificação de download
-        await Permission.notification.request().isGranted ? await flutterLocalNotificationsPlugin.show(
-          0,
-          'Download concluído',
-          fileSB.name,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'download_channel',
-              'Downloads',
-              importance: Importance.high,
-              priority: Priority.high,
-              playSound: true,
-              icon: '@mipmap/launcher_icon',
+        if (await Permission.notification.request().isGranted) {
+          await flutterLocalNotificationsPlugin.show(
+            0,
+            'Download concluído',
+            fileSB.name,
+            const NotificationDetails(
+              android: AndroidNotificationDetails(
+                'download_channel',
+                'Downloads',
+                importance: Importance.high,
+                priority: Priority.high,
+                playSound: true,
+                icon: '@mipmap/launcher_icon',
+              ),
             ),
-          ),
-          payload: filePath,
-        ) : null;
+            payload: fileFullPath,
+          );
+        }
+        if (mounted) {
+          showCustomSnackBar(context, "File downloaded");
+        }
       }
-      if (!mounted) return;
-      notifications ? showCustomSnackBar(context, "File downloaded") : null;
     } catch (e) {
       debugPrint("Error downloading file: $e");
-      notifications
-          ? showCustomSnackBar(context, "Error downloading file")
-          : null;
+      if (notifications && mounted) {
+        showCustomSnackBar(context, "Error downloading file");
+      }
     }
   }
 
@@ -174,30 +163,6 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
     );
   }
 
-  void showDownloadingDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Downloading File"),
-                SizedBox(height: 8),
-                Loading(),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   FutureBuilder<List<SharedFileSB>> buildFileList() {
     return FutureBuilder<List<SharedFileSB>>(
       future: getSharedFiles(),
@@ -234,34 +199,24 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                                   ));
                               return;
                             }
-
+                            if (!mounted) return;
+                            showDownloadingDialog(context);
                             try {
-                              AuthService authService = AuthService();
-                              Directory? directory;
-                              directory = await getDownloadsDirectory();
-                              final userId = authService.getCurrentUser().id;
-                              final targetDirPath =
-                                  "${directory!.path}/$userId/${snapshot.data![i].fileSB.path.split("/").first}";
-                              final fileFullPath =
-                                  "$targetDirPath/${snapshot.data![i].fileSB.path.split("/").last}";
-                              final filePath = fileFullPath;
-                              final downloadedFile = File(filePath);
-                              if (await downloadedFile.exists()) {
-                                final fileBytes =
-                                    await downloadedFile.readAsBytes();
+                              final fileBytes = await tryLoadDownloadedFileSB(snapshot.data![i].fileSB);
+                              if (fileBytes != null) {
                                 if (!mounted) return;
                                 navigateToFilePage(
-                                    fileBytes,
-                                    snapshot.data![i].fileSB,
-                                    snapshot.data![i].sharedSB);
+                                  fileBytes,
+                                  snapshot.data![i].fileSB,
+                                  snapshot.data![i].sharedSB,
+                                );
                                 return;
                               }
-                            } on Exception catch (e) {
+                            } catch (e) {
                               debugPrint("Error checking downloaded file: $e");
                             }
 
-                            if (!mounted) return;
-                            showDownloadingDialog();
+
                             Uint8List? file = await fileService.getSharedFile(
                                 snapshot.data![i].fileSB.path,
                                 snapshot.data![i].sharedSB.uid);
@@ -309,7 +264,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
-                                      "Expire date: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(snapshot.data![i].sharedSB.expireDate.toString()))}",
+                                      "Expire date: ${DateFormat(dateFormatToDisplay).format(DateTime.parse(snapshot.data![i].sharedSB.expireDate.toString()))}",
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style:
@@ -350,11 +305,12 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
 
   List<PopupMenuItem> getButtonList(FileSB fileSB, SharedSB sharedSB) {
     return [
-      PopupMenuItem(
-        child: const Text("Download", style: TextStyle(color: Colors.black)),
-        onTap: () async {
-          await downloadFile(fileSB, true);
-        },
+      buildDownloadMenuItem(
+        context: context,
+        fileSB: fileSB,
+        downloadedFiles: downloadedFiles,
+        fetchFile: fileService.getFile,
+        notificationsPlugin: flutterLocalNotificationsPlugin,
       ),
     ];
   }

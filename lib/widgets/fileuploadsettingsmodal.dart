@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mads_safebox/services/category_service.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 
@@ -9,6 +8,7 @@ import '../services/file_service.dart';
 import 'category/category_create_modal.dart';
 import 'category/category_dropdownbutton.dart';
 import 'custom_snack_bar.dart';
+import 'expiredateoptions.dart';
 
 class FileUploadSettingsModal extends StatefulWidget {
   final List<File> selectedFiles;
@@ -125,13 +125,24 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
             ),
 
             const SizedBox(height: 16),
-            const Text('Expiring Date'),
-            const SizedBox(height: 4),
-
-            // Date Picker
-            GestureDetector(
-              onTap: () async {
-                if(noExpiration)return;
+            ExpireDateOptions(
+              noExpiration: noExpiration,
+              expiringDate: expiringDate,
+              selectedDuration: selectedDuration,
+              onExpirationChanged: (value) {
+                setState(() {
+                  noExpiration = value;
+                  expiringDate =
+                  value ? null : DateTime.now().add(const Duration(days: 1));
+                  if (value) selectedDuration = null;
+                });
+              },
+              onDurationChanged: (value) {
+                setState(() {
+                  selectedDuration = value;
+                });
+              },
+              onPickDate: () async {
                 final DateTime? pickedDate = await showDatePicker(
                   context: context,
                   initialDate: expiringDate ?? DateTime.now(),
@@ -144,73 +155,8 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
                   });
                 }
               },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      expiringDate != null
-                          ? DateFormat('dd/MM/yyyy').format(expiringDate!)
-                          : 'dd/mm/yyyy',
-                      style: TextStyle(
-                        color:
-                            expiringDate != null ? Colors.black : Colors.grey,
-                      ),
-                    ),
-                    const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                  ],
-                ),
-              ),
             ),
-            Row(
-              children: [
-                const Text('No Expiration:'),
-                Checkbox(
-                  value: noExpiration,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      noExpiration = value!;
-                      if (noExpiration) {
-                        expiringDate = null;
-                        selectedDuration = null;
-                      } else {
-                        expiringDate = DateTime.now().add(const Duration(days: 1));
-                      }
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text('Expiring File Notification'),
 
-            IgnorePointer(
-              ignoring: noExpiration,
-              child: Opacity(
-                opacity: noExpiration ? 0.5 : 1.0,
-                child: DropdownButton<Duration?>(
-                  value: selectedDuration,
-                  onChanged: (Duration? newValue) {
-                    setState(() {
-                      selectedDuration = newValue;
-                    });
-                  },
-                  items: options.entries.map((entry) {
-                    return DropdownMenuItem<Duration?>(
-                      value: entry.value,
-                      child: Text(entry.key),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
             // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,

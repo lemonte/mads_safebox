@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mads_safebox/models/category.dart';
 import 'package:mads_safebox/services/category_service.dart';
 
+import '../actionbuttonsrow.dart';
 import '../custom_snack_bar.dart';
 
 class CategoryCreateModal extends StatefulWidget {
@@ -58,60 +59,33 @@ class _CategoryCreateModalState extends State<CategoryCreateModal> {
                     textAlign: TextAlign.center,
                   )
                 : Container(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    String name = textController.text.trim();
-                    if (name.isEmpty) {
-                      setState(() {
-                        infoText = "The name cannot be empty.";
-                      });
-                      return;
-                    }
+            ActionButtonsRow(
+              confirmText: 'Create Category',
+              onConfirm: () async {
+                String name = textController.text.trim();
+                if (name.isEmpty) {
+                  setState(() {
+                    infoText = "The name cannot be empty.";
+                  });
+                  return;
+                }
 
-                    for (int i = 0; i < widget.categories.length; i++) {
-                      if (name == widget.categories[i].name) {
-                        setState(() {
-                          infoText =
-                              "You already have a category with that name.";
-                        });
-                        return;
-                      }
-                    }
+                for (int i = 0; i < widget.categories.length; i++) {
+                  if (name == widget.categories[i].name) {
+                    setState(() {
+                      infoText =
+                      "You already have a category with that name.";
+                    });
+                    return;
+                  }
+                }
 
-                    final response = await categoryService.createCategory(name);
+                final response = await categoryService.createCategory(name);
 
-                    if (!mounted) return;
-                    handleCategoryCreationResult(response);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    minimumSize: const Size(80, 36),
-                  ),
-                  child: const Text('Create Category'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    minimumSize: const Size(80, 36),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ],
+                if (!mounted) return;
+                handleCategoryCreationResult(response);
+              },
+              onCancel: () => Navigator.of(context).pop(),
             ),
           ],
         ),

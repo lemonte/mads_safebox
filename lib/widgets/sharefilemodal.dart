@@ -124,8 +124,8 @@ class _FileShareModalState extends State<FileShareModal> {
                         children: [
                           Text(
                             noExpiration
-                                ? 'dd/mm/yyyy'
-                                : DateFormat('dd/MM/yyyy').format(expiringDate),
+                                ? dateFormatToDisplay
+                                : DateFormat(dateFormatToDisplay).format(expiringDate),
                             style: const TextStyle(color: Colors.black),
                           ),
                           const Icon(Icons.arrow_drop_down, color: Colors.black),

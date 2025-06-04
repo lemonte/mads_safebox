@@ -23,6 +23,7 @@ import '../models/category.dart';
 import '../models/file.dart';
 import '../services/auth_service.dart';
 import '../services/file_service.dart';
+import '../widgets/actionbuttonsrow.dart';
 import '../widgets/category/category_dropdownbutton.dart';
 import '../widgets/category/category_rename_modal.dart';
 import '../widgets/custom_snack_bar.dart';
@@ -757,54 +758,27 @@ class _HomePageState extends ConsumerState<HomePage> {
                         const Text(
                             "Are you sure you want to delete this file?"),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                final bool response =
-                                    await fileService.deleteFile(fileSB);
-                                if (response) {
-                                  if (!context.mounted) return;
-                                  Navigator.of(context).pop();
-                                  showCustomSnackBar(context, "File deleted");
-                                  setState(() {
-                                    images = fileService.getImageList();
-                                    docs = fileService.getDocList();
-                                  });
-                                  return;
-                                }
-                                if (!context.mounted) return;
-                                Navigator.of(context).pop();
-                                showCustomSnackBar(context,
-                                    "An error occurred when deleting the file");
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Delete'),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
+                        ActionButtonsRow(
+                          confirmText: 'Delete',
+                          onConfirm: () async {
+                            final bool response =
+                            await fileService.deleteFile(fileSB);
+                            if (response) {
+                              if (!context.mounted) return;
+                              Navigator.of(context).pop();
+                              showCustomSnackBar(context, "File deleted");
+                              setState(() {
+                                images = fileService.getImageList();
+                                docs = fileService.getDocList();
+                              });
+                              return;
+                            }
+                            if (!context.mounted) return;
+                            Navigator.of(context).pop();
+                            showCustomSnackBar(context,
+                                "An error occurred when deleting the file");
+                          },
+                          onCancel: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
@@ -838,54 +812,27 @@ class _HomePageState extends ConsumerState<HomePage> {
                           controller: renameController,
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                final bool response = await fileService.renameFile(
-                                    fileSB,
-                                    "${renameController.text.trim()}.${fileSB.extension}");
-                                if (!context.mounted) return;
-                                if (response) {
-                                  Navigator.of(context).pop();
-                                  showCustomSnackBar(context, "File renamed");
-                                  setState(() {
-                                    images = fileService.getImageList();
-                                    docs = fileService.getDocList();
-                                  });
-                                  return;
-                                }
-                                Navigator.of(context).pop();
-                                showCustomSnackBar(context,
-                                    "An error occurred when renaming the file");
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Rename'),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                minimumSize: const Size(80, 36),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
+                        ActionButtonsRow(
+                          confirmText: 'Rename',
+                          onConfirm: () async {
+                            final bool response = await fileService.renameFile(
+                                fileSB,
+                                "${renameController.text.trim()}.${fileSB.extension}");
+                            if (!context.mounted) return;
+                            if (response) {
+                              Navigator.of(context).pop();
+                              showCustomSnackBar(context, "File renamed");
+                              setState(() {
+                                images = fileService.getImageList();
+                                docs = fileService.getDocList();
+                              });
+                              return;
+                            }
+                            Navigator.of(context).pop();
+                            showCustomSnackBar(context,
+                                "An error occurred when renaming the file");
+                          },
+                          onCancel: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),

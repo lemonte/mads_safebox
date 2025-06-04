@@ -224,7 +224,7 @@ class _FilePageState extends State<FilePage> {
             Visibility(
               visible: widget.fileSB.expireDate != null,
               child: Text(
-                "Expire date: ${DateFormat('dd/MM/yyyy').format(widget.fileSB.expireDate ?? DateTime.now())}",
+                "Expire date: ${DateFormat(dateFormatToDisplay).format(widget.fileSB.expireDate ?? DateTime.now())}",
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style:
