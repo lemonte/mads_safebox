@@ -9,6 +9,7 @@ import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/services/category_box_service.dart';
 import 'package:mads_safebox/services/category_service.dart';
 import 'package:mads_safebox/views/filepage.dart';
+import 'package:mads_safebox/views/reminderspage.dart';
 import 'package:mads_safebox/views/sharedfilespage.dart';
 import 'package:mads_safebox/views/uploadfiles.dart';
 import 'package:mads_safebox/widgets/category/category_create_modal.dart';
@@ -25,6 +26,7 @@ import '../services/file_service.dart';
 import '../widgets/category/category_dropdownbutton.dart';
 import '../widgets/category/category_rename_modal.dart';
 import '../widgets/custom_snack_bar.dart';
+import '../widgets/expire_date_change_modal.dart';
 import '../widgets/sharefilemodal.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -367,25 +369,50 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SharedFilesPage(),
-                    ));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: mainColor,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
-              ),
-              child: const Text(
-                "View Shared Files",
-                style: TextStyle(color: mainTextColor),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SharedFilesPage(),
+                        ));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mainColor,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: const Text(
+                    "View Shared Files",
+                    style: TextStyle(color: mainTextColor),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RemindersPage(),
+                        ));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mainColor,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: const Text(
+                    "View Reminders",
+                    style: TextStyle(color: mainTextColor),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -393,17 +420,15 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  List<Widget> buildCategoryActionButtons(BuildContext context){
+  List<Widget> buildCategoryActionButtons(BuildContext context) {
     List<Widget> buttonList = [];
 
-    if (
-    selectedCategory.id != favoriteCategoryId) {
+    if (selectedCategory.id != favoriteCategoryId) {
       buttonList.add(InkWell(
         onTap: () {
           ///guardar a categoria fav
           categoryBoxService.saveFavoriteCategory(
-              authService.getCurrentUser().id,
-              selectedCategory.id);
+              authService.getCurrentUser().id, selectedCategory.id);
           favoriteCategoryId = selectedCategory.id;
           setState(() {});
         },
@@ -414,7 +439,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       ));
     } else {
       buttonList.add(InkWell(
-
         onTap: () {
           categoryBoxService.saveFavoriteCategory(
               authService.getCurrentUser().id, 1);
@@ -445,8 +469,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (value != null) {
               selectedCategory.name = value;
               (await categories)
-                  .firstWhere((element) =>
-              element.id == selectedCategory.id)
+                  .firstWhere((element) => element.id == selectedCategory.id)
                   .name = value;
               setState(() {});
             }
@@ -617,7 +640,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: GestureDetector(
                 onTap: () async {
                   if (downloadedFiles.containsKey(files[i].name)) {
-                    navigateToFilePage(downloadedFiles[files[i].name]!, files[i]);
+                    navigateToFilePage(
+                        downloadedFiles[files[i].name]!, files[i]);
                     return;
                   }
 
@@ -625,11 +649,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Directory? directory;
                     directory = await getDownloadsDirectory();
                     final userId = authService.getCurrentUser().id;
-                    final targetDirPath = "${directory!.path}/$userId/${files[i].path.split("/").first}";
-                    final fileFullPath = "$targetDirPath/${files[i].path.split("/").last}";
+                    final targetDirPath =
+                        "${directory!.path}/$userId/${files[i].path.split("/").first}";
+                    final fileFullPath =
+                        "$targetDirPath/${files[i].path.split("/").last}";
                     final filePath = fileFullPath;
                     final downloadedFile = File(filePath);
-                    if(await downloadedFile.exists()){
+                    if (await downloadedFile.exists()) {
                       final fileBytes = await downloadedFile.readAsBytes();
                       if (!mounted) return;
                       navigateToFilePage(fileBytes, files[i]);
@@ -866,6 +892,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 );
               });
+        },
+      ),
+      PopupMenuItem(
+        child: const Text("Change Expire Date",
+            style: TextStyle(color: Colors.black)),
+        onTap: () async {
+          showDialog(
+              context: context,
+              builder: (context) {
+                return ExpireDateChangeModal(fileSB: fileSB);
+              }).whenComplete(() {
+            setState(() {
+              docs = fileService.getDocList();
+              images = fileService.getImageList();
+            });
+          });
         },
       ),
       PopupMenuItem(

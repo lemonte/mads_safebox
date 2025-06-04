@@ -25,9 +25,19 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
   FileService fileService = FileService();
   DateTime? expiringDate;
   bool isUploading = false;
+  bool noExpiration = true;
   late Future<List<CategorySB>> categories;
 
   CategorySB? selectedCategory;
+
+  Duration? selectedDuration;
+
+  final Map<String, Duration?> options = {
+    'No Notification': null,
+    '1 Day Before': const Duration(days: 1),
+    '1 Week Before': const Duration(days: 7),
+    '1 Month Before': const Duration(days: 31),
+  };
 
   @override
   void initState() {
@@ -42,17 +52,15 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
       });
 
       try {
-        await fileService.uploadFile(
-            widget.selectedFiles, selectedCategory?.id ?? defaultCategoryID, expiringDate);
+        await fileService.uploadFile(widget.selectedFiles,
+            selectedCategory?.id ?? defaultCategoryID, expiringDate, selectedDuration != null ? expiringDate!.subtract(selectedDuration!) : null);
 
         if (!mounted) return;
         showCustomSnackBar(context, "Files uploaded successfully");
         Navigator.pop(context);
-
       } catch (e) {
         debugPrint("Error uploading file: $e");
         showCustomSnackBar(context, "Error uploading file: $e");
-
       }
       Navigator.pop(context);
       setState(() {
@@ -83,15 +91,15 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
             const SizedBox(height: 16),
 
             // Category Dropdown
-          buildCategoryDropdown(
-            categoriesFuture: categories,
-            selectedCategory: selectedCategory,
-            onChanged: (CategorySB? value) {
-              setState(() {
-                selectedCategory = value;
-              });
-            },
-          ),
+            buildCategoryDropdown(
+              categoriesFuture: categories,
+              selectedCategory: selectedCategory,
+              onChanged: (CategorySB? value) {
+                setState(() {
+                  selectedCategory = value;
+                });
+              },
+            ),
 
             // Create new category button
             Align(
@@ -105,7 +113,7 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey.shade300,
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),
@@ -123,6 +131,7 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
             // Date Picker
             GestureDetector(
               onTap: () async {
+                if(noExpiration)return;
                 final DateTime? pickedDate = await showDatePicker(
                   context: context,
                   initialDate: expiringDate ?? DateTime.now(),
@@ -159,9 +168,49 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
                 ),
               ),
             ),
+            Row(
+              children: [
+                const Text('No Expiration:'),
+                Checkbox(
+                  value: noExpiration,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      noExpiration = value!;
+                      if (noExpiration) {
+                        expiringDate = null;
+                        selectedDuration = null;
+                      } else {
+                        expiringDate = DateTime.now().add(const Duration(days: 1));
+                      }
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text('Expiring File Notification'),
 
-            const SizedBox(height: 24),
-
+            IgnorePointer(
+              ignoring: noExpiration,
+              child: Opacity(
+                opacity: noExpiration ? 0.5 : 1.0,
+                child: DropdownButton<Duration?>(
+                  value: selectedDuration,
+                  onChanged: (Duration? newValue) {
+                    setState(() {
+                      selectedDuration = newValue;
+                    });
+                  },
+                  items: options.entries.map((entry) {
+                    return DropdownMenuItem<Duration?>(
+                      value: entry.value,
+                      child: Text(entry.key),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
             // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -221,5 +270,4 @@ class _FileUploadSettingsModalState extends State<FileUploadSettingsModal> {
       }
     });
   }
-
 }

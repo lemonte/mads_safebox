@@ -5,29 +5,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:mads_safebox/models/sharedplusfile.dart';
 import 'package:mads_safebox/services/sharefiles_service.dart';
 import 'package:mads_safebox/views/filepage.dart';
+import 'package:mads_safebox/widgets/expire_date_change_modal.dart';
 import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/file.dart';
-import '../models/role.dart';
-import '../models/shared.dart';
 import '../services/auth_service.dart';
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
 
-class SharedFilesPage extends ConsumerStatefulWidget {
-  const SharedFilesPage({super.key});
+class RemindersPage extends ConsumerStatefulWidget {
+  const RemindersPage({super.key});
 
   @override
-  ConsumerState<SharedFilesPage> createState() => _SharedFilesState();
+  ConsumerState<RemindersPage> createState() => _RemindersPageState();
 }
 
-class _SharedFilesState extends ConsumerState<SharedFilesPage> {
+class _RemindersPageState extends ConsumerState<RemindersPage> {
   FileService fileService = FileService();
   ShareFilesService shareFilesService = ShareFilesService();
   bool isShowingImages = true;
@@ -35,12 +33,11 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
   Map<String, Uint8List> downloadedFiles = {};
 
   //late Future<List<SharedFileSB>> sharedFiles;
-  late Stream<List<FileSB>?> images;
-  late Stream<List<FileSB>?> docs;
+  // late Stream<List<FileSB>?> images;
+  // late Stream<List<FileSB>?> docs;
 
-  Future<List<SharedFileSB>> getSharedFiles() async {
-    List<SharedFileSB> sharedFiles = await shareFilesService.getSharedFiles();
-    return await fileService.getSharedFiles(sharedFiles);
+  Future<List<FileSB>> getSharedFiles() async {
+    return await fileService.getExpiringFiles();
   }
 
   Future<bool> requestStoragePermission() async {
@@ -67,7 +64,8 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
       // print("external directory: $directory");
 
       final userId = authService.getCurrentUser().id;
-      final targetDirPath = "${directory!.path}/$userId/${fileSB.path.split("/").first}";
+      final targetDirPath =
+          "${directory!.path}/$userId/${fileSB.path.split("/").first}";
       debugPrint("targetDirPath: $targetDirPath");
 
       final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
@@ -98,22 +96,24 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
 
       if (notifications) {
         // Mostra notificação de download
-        await Permission.notification.request().isGranted ? await flutterLocalNotificationsPlugin.show(
-          0,
-          'Download concluído',
-          fileSB.name,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'download_channel',
-              'Downloads',
-              importance: Importance.high,
-              priority: Priority.high,
-              playSound: true,
-              icon: '@mipmap/launcher_icon',
-            ),
-          ),
-          payload: filePath,
-        ) : null;
+        await Permission.notification.request().isGranted
+            ? await flutterLocalNotificationsPlugin.show(
+                0,
+                'Download concluído',
+                fileSB.name,
+                const NotificationDetails(
+                  android: AndroidNotificationDetails(
+                    'download_channel',
+                    'Downloads',
+                    importance: Importance.high,
+                    priority: Priority.high,
+                    playSound: true,
+                    icon: '@mipmap/launcher_icon',
+                  ),
+                ),
+                payload: filePath,
+              )
+            : null;
       }
       if (!mounted) return;
       notifications ? showCustomSnackBar(context, "File downloaded") : null;
@@ -150,7 +150,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
         children: [
           const SizedBox(height: 12),
           const Text(
-            "Files Shared With You",
+            "Files with an Expire Date",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
@@ -163,13 +163,11 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
     );
   }
 
-  void navigateToFilePage(
-      Uint8List fileBytes, FileSB fileSB, SharedSB sharedSB) {
+  void navigateToFilePage(Uint8List fileBytes, FileSB fileSB) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            FilePage(fileSB: fileSB, sharedSB: sharedSB, file: fileBytes),
+        builder: (_) => FilePage(fileSB: fileSB, file: fileBytes),
       ),
     );
   }
@@ -198,8 +196,8 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
     );
   }
 
-  FutureBuilder<List<SharedFileSB>> buildFileList() {
-    return FutureBuilder<List<SharedFileSB>>(
+  FutureBuilder<List<FileSB>> buildFileList() {
+    return FutureBuilder<List<FileSB>>(
       future: getSharedFiles(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -214,6 +212,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
             children: [
               for (int i = 0; i < snapshot.data!.length; i++)
                 ListTile(
+                  //TODO: implementar o menu (mudar o on tap para a row do icon e imagem)
                   title: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -222,15 +221,14 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                         child: GestureDetector(
                           onTap: () async {
                             if (downloadedFiles
-                                .containsKey(snapshot.data![i].fileSB.name)) {
+                                .containsKey(snapshot.data![i].name)) {
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => FilePage(
-                                        fileSB: snapshot.data![i].fileSB,
-                                        sharedSB: snapshot.data![i].sharedSB,
+                                        fileSB: snapshot.data![i],
                                         file: downloadedFiles[
-                                            snapshot.data![i].fileSB.name]!),
+                                            snapshot.data![i].name]!),
                                   ));
                               return;
                             }
@@ -241,9 +239,9 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                               directory = await getDownloadsDirectory();
                               final userId = authService.getCurrentUser().id;
                               final targetDirPath =
-                                  "${directory!.path}/$userId/${snapshot.data![i].fileSB.path.split("/").first}";
+                                  "${directory!.path}/$userId/${snapshot.data![i].path.split("/").first}";
                               final fileFullPath =
-                                  "$targetDirPath/${snapshot.data![i].fileSB.path.split("/").last}";
+                                  "$targetDirPath/${snapshot.data![i].path.split("/").last}";
                               final filePath = fileFullPath;
                               final downloadedFile = File(filePath);
                               if (await downloadedFile.exists()) {
@@ -251,9 +249,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                                     await downloadedFile.readAsBytes();
                                 if (!mounted) return;
                                 navigateToFilePage(
-                                    fileBytes,
-                                    snapshot.data![i].fileSB,
-                                    snapshot.data![i].sharedSB);
+                                    fileBytes, snapshot.data![i]);
                                 return;
                               }
                             } on Exception catch (e) {
@@ -262,11 +258,10 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
 
                             if (!mounted) return;
                             showDownloadingDialog();
-                            Uint8List? file = await fileService.getSharedFile(
-                                snapshot.data![i].fileSB.path,
-                                snapshot.data![i].sharedSB.uid);
+                            Uint8List? file = await fileService
+                                .getFile(snapshot.data![i].path);
 
-                            debugPrint(snapshot.data![i].fileSB.path);
+                            debugPrint(snapshot.data![i].path);
 
                             if (context.mounted) {
                               Navigator.pop(context);
@@ -277,16 +272,13 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                                 return;
                               }
 
-                              downloadedFiles[snapshot.data![i].fileSB.name] =
-                                  file;
+                              downloadedFiles[snapshot.data![i].name] = file;
 
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => FilePage(
-                                        fileSB: snapshot.data![i].fileSB,
-                                        sharedSB: snapshot.data![i].sharedSB,
-                                        file: file),
+                                        fileSB: snapshot.data![i], file: file),
                                   ));
                             }
                           },
@@ -295,8 +287,7 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                             children: [
                               const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 20.0),
-                                child: Icon(Icons
-                                    .image),
+                                child: Icon(Icons.image),
                               ),
                               Expanded(
                                 flex: 3,
@@ -304,12 +295,12 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      snapshot.data![i].fileSB.name,
+                                      snapshot.data![i].name,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
-                                      "Expire date: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(snapshot.data![i].sharedSB.expireDate.toString()))}",
+                                      "Expire date: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(snapshot.data![i].expireDate.toString()))}",
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style:
@@ -322,20 +313,15 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
                           ),
                         ),
                       ),
-                      Visibility(
-                        visible:
-                            snapshot.data![i].sharedSB.role == Role.download,
-                        child: Expanded(
-                          child: PopupMenuButton(
-                            icon: const Icon(
-                              Icons.menu,
-                              color: Colors.black,
-                            ),
-                            itemBuilder: (BuildContext context) {
-                              return getButtonList(snapshot.data![i].fileSB,
-                                  snapshot.data![i].sharedSB);
-                            },
+                      Expanded(
+                        child: PopupMenuButton(
+                          icon: const Icon(
+                            Icons.menu,
+                            color: Colors.black,
                           ),
+                          itemBuilder: (BuildContext context) {
+                            return getButtonList(snapshot.data![i]);
+                          },
                         ),
                       ),
                     ],
@@ -348,8 +334,21 @@ class _SharedFilesState extends ConsumerState<SharedFilesPage> {
     );
   }
 
-  List<PopupMenuItem> getButtonList(FileSB fileSB, SharedSB sharedSB) {
+  List<PopupMenuItem> getButtonList(FileSB fileSB) {
     return [
+      PopupMenuItem(
+        child: const Text("Change Expire Date",
+            style: TextStyle(color: Colors.black)),
+        onTap: () async {
+          showDialog(
+              context: context,
+              builder: (context) {
+                return ExpireDateChangeModal(fileSB: fileSB);
+              }).whenComplete(() {
+            setState(() {});
+          });
+        },
+      ),
       PopupMenuItem(
         child: const Text("Download", style: TextStyle(color: Colors.black)),
         onTap: () async {
