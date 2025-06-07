@@ -8,9 +8,11 @@ const Color mainTextColor = Color(0xFFFFFFFF);
 const Color snackBarColor = Color(0xFF8C8C8C);
 const String usersBoxKey = "UserData";
 const String categoryBoxKey = "FavoriteCategories";
-
 const durationSyncRetry = Duration(minutes: 30);
+const String dateFormatToSupabase = 'yyyy-MM-dd';
+const String dateFormatToDisplay = 'dd/MM/yyyy';
 
+const serviceNotificationDetails = NotificationDetails(
 const autoSyncNotificationDetails = NotificationDetails(
   android: AndroidNotificationDetails(
     "SafeBoxSynchronization",      //channel ID

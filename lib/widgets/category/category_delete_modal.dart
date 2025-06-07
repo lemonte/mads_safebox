@@ -5,6 +5,7 @@ import 'package:mads_safebox/widgets/loading.dart';
 import '../../global/default_values.dart';
 import '../../models/category.dart';
 import '../../services/category_service.dart';
+import '../actionbuttonsrow.dart';
 import '../custom_snack_bar.dart';
 import 'category_dropdownbutton.dart';
 
@@ -100,50 +101,23 @@ class _CategoryDeleteModalState extends State<CategoryDeleteModal> {
               }
             }),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            ElevatedButton(
-              onPressed: () async {
-                setState(() {
-                  title = "Moving Files";
-                  isDeleting = true;
-                });
-                final responseFiles = await fileService.changeFilesCategory(
-                    widget.idCategoryToDelete, currentCategory.id);
-                final response = await categoryService
-                    .deleteCategory(widget.idCategoryToDelete);
-                if(mounted) {
-                  handleCategoryDeletionResult(response, responseFiles);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                minimumSize: const Size(80, 36),
-              ),
-              child: const Text('Delete Category'),
-            ),
-            const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                minimumSize: const Size(80, 36),
-              ),
-              child: const Text('Cancel'),
-            ),
-          ],
-        )
+        ActionButtonsRow(
+          confirmText: 'Delete Category',
+          onConfirm: () async {
+            setState(() {
+              title = "Moving Files";
+              isDeleting = true;
+            });
+            final responseFiles = await fileService.changeFilesCategory(
+                widget.idCategoryToDelete, currentCategory.id);
+            final response = await categoryService
+                .deleteCategory(widget.idCategoryToDelete);
+            if(mounted) {
+              handleCategoryDeletionResult(response, responseFiles);
+            }
+          },
+          onCancel: () => Navigator.of(context).pop(),
+        ),
       ],
     );
   }

@@ -7,6 +7,8 @@ class FileSB {
    int size;
    String path;
    int categoryId;
+   DateTime? expireDate;
+   DateTime? notificationDate;
 
    FileSB({
       required this.id,
@@ -16,7 +18,9 @@ class FileSB {
       required this.extension,
       required this.size,
       required this.path,
-      required this.categoryId
+      required this.categoryId,
+      required this.expireDate,
+      required this.notificationDate
    });
 
    Map<String, dynamic> toJson() {
@@ -29,6 +33,8 @@ class FileSB {
          'size': size,
          'path': path,
          'category_id': categoryId,
+         'expire_date': expireDate,
+         'notification_date': notificationDate,
       };
    }
 
@@ -42,6 +48,8 @@ class FileSB {
          size: json['size'] as int,
          path: json['path'] as String,
          categoryId: json['category_id'] as int,
+         expireDate: DateTime.tryParse(json['expire_date'].toString()),
+         notificationDate: DateTime.tryParse(json['notification_date'].toString()),
       );
    }
 
