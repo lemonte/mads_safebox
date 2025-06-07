@@ -16,7 +16,6 @@ import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../global/bg_service_invokes.dart';
 import '../models/category.dart';
 import '../models/file.dart';
 import '../services/auth_service.dart';
@@ -41,7 +40,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   FileService fileService = FileService();
   CategoryService categoryService = CategoryService();
   CategoryBoxService categoryBoxService = CategoryBoxService();
-  FlutterBackgroundService backgroundService = FlutterBackgroundService();
 
   bool isShowingImages = true;
   TextEditingController renameController = TextEditingController();
@@ -369,7 +367,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       buttonList.add(InkWell(
         onTap: () {
           ///guardar a categoria fav
-          categoryBoxService.saveFavoriteCategory(
+          CategoryBoxService.saveFavoriteCategory(
               authService.getCurrentUser().id, selectedCategory.id);
           favoriteCategoryId = selectedCategory.id;
           setState(() {});
@@ -382,7 +380,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     } else {
       buttonList.add(InkWell(
         onTap: () {
-          categoryBoxService.saveFavoriteCategory(
+          CategoryBoxService.saveFavoriteCategory(
               authService.getCurrentUser().id, 1);
           favoriteCategoryId = 1;
           setState(() {});
@@ -442,7 +440,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (value != null) {
               (await categories).remove(selectedCategory);
               selectedCategory = (await categories).first;
-              categoryBoxService.saveFavoriteCategory(
+              CategoryBoxService.saveFavoriteCategory(
                   authService.getCurrentUser().id, 1);
               favoriteCategoryId = 1;
               setState(() {});

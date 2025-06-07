@@ -12,7 +12,6 @@ const durationSyncRetry = Duration(minutes: 30);
 const String dateFormatToSupabase = 'yyyy-MM-dd';
 const String dateFormatToDisplay = 'dd/MM/yyyy';
 
-const serviceNotificationDetails = NotificationDetails(
 const autoSyncNotificationDetails = NotificationDetails(
   android: AndroidNotificationDetails(
     "SafeBoxSynchronization",      //channel ID
