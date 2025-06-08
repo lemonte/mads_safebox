@@ -1180,8 +1180,7 @@ packages:
       sha256: "6f1b564492d0147b330dd794fee8f512cec4977957f310f9951b5f9d83618dae"
       url: "https://pub.dev"
     source: hosted
-<<<<<<< HEAD
-    version: "1.1.5"
+    version: "2.1.0"
   workmanager:
     dependency: "direct main"
     description:
@@ -1190,9 +1189,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.0"
-=======
-    version: "2.1.0"
->>>>>>> 7fc0a62c4cceb0211d9001d1f9b0ad67d68c83f0
   xdg_directories:
     dependency: transitive
     description:
