@@ -3,27 +3,30 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/config/env_config.dart';
 import 'package:mads_safebox/global/default_values.dart';
-import 'package:mads_safebox/services/background_service.dart';
 import 'package:mads_safebox/services/category_box_service.dart';
+import 'package:mads_safebox/services/user_box_service.dart';
+import 'package:mads_safebox/services/workmanager.dart';
 import 'package:mads_safebox/widgets/auth_wrapper.dart';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:workmanager/workmanager.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await EnvConfig().initialize();
-  
+
   await Supabase.initialize(
     url: EnvConfig().supabaseUrl,
     anonKey: EnvConfig().supabaseAnonKey,
   );
 
-  const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/launcher_icon');
+  const initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/launcher_icon');
   const initializationSettingsIOS = DarwinInitializationSettings(
     requestAlertPermission: true,
     requestBadgePermission: true,
@@ -44,7 +47,25 @@ void main() async {
     },
   );
 
-  await initializeService();
+
+  Workmanager().initialize(
+    callbackDispatcher,
+    //isInDebugMode: true,
+    // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+  );
+
+  Workmanager().registerPeriodicTask(
+    keyWorkManagerAutoSync,
+    taskWorkManagerAutoSync,
+    frequency: durationSyncRetry,
+    //initialDelay: const Duration(seconds: 30),
+    constraints: Constraints(
+      networkType: NetworkType.connected,
+      //requiresDeviceIdle: true,
+    ),
+  );
+
+  await UserBoxService.init();
   await CategoryBoxService.init();
   await Permission.notification.request();
 

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/global/default_values.dart';
@@ -17,12 +16,12 @@ import 'package:mads_safebox/widgets/loading.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../global/bg_service_invokes.dart';
 import '../models/category.dart';
 import '../models/file.dart';
 import '../services/auth_service.dart';
 import '../services/file_service.dart';
 import '../widgets/actionbuttonsrow.dart';
+import '../services/user_box_service.dart';
 import '../widgets/category/category_dropdownbutton.dart';
 import '../widgets/category/category_name_modal.dart';
 import '../widgets/custom_snack_bar.dart';
@@ -41,7 +40,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   FileService fileService = FileService();
   CategoryService categoryService = CategoryService();
   CategoryBoxService categoryBoxService = CategoryBoxService();
-  FlutterBackgroundService backgroundService = FlutterBackgroundService();
 
   bool isShowingImages = true;
   TextEditingController renameController = TextEditingController();
@@ -60,14 +58,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
 
-    initBGServiceTasks();
-
     initValues();
+    initAsyncValues();
 
     categories.then((value) {
       setState(() {
-        favoriteCategoryId = categoryBoxService
-            .getFavoriteCategory(authService.getCurrentUser().id);
+        favoriteCategoryId = CategoryBoxService.getFavoriteCategory(authService.getCurrentUser().id);
         selectedCategory = value.firstWhere(
           (element) => element.id == favoriteCategoryId,
           orElse: () => defaultCategory,
@@ -82,17 +78,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  Future<void> downloadFile(
-      BuildContext context, FileSB fileSB, bool notifications) async {
+  Future<void> downloadFile(BuildContext context, FileSB fileSB, bool notifications) async {
     try {
       final directory = await getDownloadsDirectory();
       final userId = authService.getCurrentUser().id;
 
-      final targetDirPath =
-          "${directory!.path}/$userId/${fileSB.path.split("/").first}";
+      final targetDirPath = "${directory!.path}/$userId/${fileSB.path.split("/").first}";
       final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
       final file = File(fileFullPath);
 
@@ -125,8 +118,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
-  void handleFileAlreadyExists(
-      BuildContext context, String name, bool notifications) {
+  void handleFileAlreadyExists(BuildContext context, String name, bool notifications) {
     if (notifications) {
       showCustomSnackBar(context, "O arquivo '$name' já existe.");
     }
@@ -175,56 +167,19 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Future<void> initValues() async {
+  Future<void> initAsyncValues() async {
     categories = categoryService.getCategories();
     images = fileService.getImageList();
     docs = fileService.getDocList();
   }
 
-  void initBGServiceTasks() {
-    ///Add user to bg service hive box
-    ///Only initializes, if it already exists then nothing happens
-    backgroundService.invoke(invokeAddUser, {
-      userboxKeyUid: authService.getCurrentUser().id,
-      userboxKeyUsername: authService.getCurrentUser().nome
-    });
+  void initValues() {
+    ///Add user to hive box
+    UserBoxService.addUserData(authService.getCurrentUser().id, authService.getCurrentUser().nome);
 
-    ///Get current allowDownloadWithMobileData value from bg service when called from service
-    ///first start listening for response
-    backgroundService
-        .on(invokeRespondWithDownloadWithMobileDataToApp)
-        .listen((data) {
-      if (data != null) {
-        if (mounted) {
-          setState(() {
-            allowDownloadWithMobileData =
-                data[userboxKeyDownloadWithMobileData];
-          });
-        }
-      }
-    });
+    autoSyncEnabled = UserBoxService.getAutoSync(authService.getCurrentUser().id);
 
-    ///then call the bg service to get the value
-    backgroundService.invoke(invokeGetDownloadWithMobileDataFromApp,
-        {userboxKeyUid: authService.getCurrentUser().id});
-
-    ///Get current AutoSync value from bg service when called from service
-    ///first start listening for response
-    backgroundService.on(invokeRespondWithAutoSyncToApp).listen((data) {
-      if (data != null) {
-        if (mounted) {
-          setState(() {
-            autoSyncEnabled = data[userboxKeyAutoSync];
-          });
-        }
-      }
-    });
-
-    ///then call the bg service to get the value
-    backgroundService.invoke(invokeGetAutoSyncFromApp,
-        {userboxKeyUid: authService.getCurrentUser().id});
-
-    backgroundService.invoke(invokeSynchronize);
+    allowDownloadWithMobileData = UserBoxService.getAllowDownloadWithMobileData(authService.getCurrentUser().id);
   }
 
   @override
@@ -235,28 +190,15 @@ class _HomePageState extends ConsumerState<HomePage> {
         autoSyncEnabled: autoSyncEnabled,
         allowDownloadWithMobileData: allowDownloadWithMobileData,
         onToggleAutoSync: () async {
-          backgroundService.invoke(
-            invokeUpdateAutoSyncPreference,
-            {
-              userboxKeyUid: authService.getCurrentUser().id,
-              userboxKeyAutoSync: !autoSyncEnabled
-            },
-          );
-
-          if (!autoSyncEnabled) backgroundService.invoke(invokeSynchronize);
+          UserBoxService.updateAutoSyncPreference(authService.getCurrentUser().id, !autoSyncEnabled);
 
           setState(() {
             autoSyncEnabled = !autoSyncEnabled;
           });
         },
         onToggleDownloadWithMobileData: () async {
-          backgroundService.invoke(
-            invokeUpdateDownloadWithMobileData,
-            {
-              userboxKeyUid: authService.getCurrentUser().id,
-              userboxKeyDownloadWithMobileData: !allowDownloadWithMobileData
-            },
-          );
+          UserBoxService.updateAllowDownloadWithMobileData(
+              authService.getCurrentUser().id, !allowDownloadWithMobileData);
 
           setState(() {
             allowDownloadWithMobileData = !allowDownloadWithMobileData;
@@ -264,147 +206,141 @@ class _HomePageState extends ConsumerState<HomePage> {
         },
       ),
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-          //Categories
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                buildCategoryDropdown(
-                  categoriesFuture: categories,
-                  selectedCategory: selectedCategory,
-                  onChanged: (CategorySB? value) {
-                    if (value != null) {
-                      setState(() {
-                        selectedCategory = value;
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            //Categories
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  buildCategoryDropdown(
+                    categoriesFuture: categories,
+                    selectedCategory: selectedCategory,
+                    onChanged: (CategorySB? value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedCategory = value;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ...buildCategoryActionButtons(context),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Tabs (Files / Images)
+            buildFileTypeSelector(),
+            const SizedBox(height: 24),
+            Text(
+              isShowingImages ? "Your Images" : "Your Files",
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            // File List
+            Expanded(
+              child: buildFileList(),
+            ),
+            // Bottom buttons
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      List<CategorySB> catValue = await categories;
+                      _showCreateCategoryDialog(catValue);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    child: const Text(
+                      "Add Category",
+                      style: TextStyle(color: mainTextColor),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      // showDialog(
+                      //   context: context,
+                      //   builder: (context) => const FilePickerDialog(),
+                      // );
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const UploadFilesPage(),
+                          )).then((value) {
+                        setState(() {
+                          initAsyncValues();
+                        });
                       });
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                ...buildCategoryActionButtons(context),
-              ],
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    child: const Text(
+                      "Add File",
+                      style: TextStyle(color: mainTextColor),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // Tabs (Files / Images)
-          buildFileTypeSelector(),
-          const SizedBox(height: 24),
-          Text(
-            isShowingImages ? "Your Images" : "Your Files",
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
-          // File List
-          Expanded(
-            child: buildFileList(),
-          ),
-          // Bottom buttons
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    List<CategorySB> catValue = await categories;
-                    _showCreateCategoryDialog(catValue);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainColor,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SharedFilesPage(),
+                          ));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    child: const Text(
+                      "View Shared Files",
+                      style: TextStyle(color: mainTextColor),
+                    ),
                   ),
-                  child: const Text(
-                    "Add Category",
-                    style: TextStyle(color: mainTextColor),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RemindersPage(),
+                          ));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    child: const Text(
+                      "View Reminders",
+                      style: TextStyle(color: mainTextColor),
+                    ),
                   ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    // showDialog(
-                    //   context: context,
-                    //   builder: (context) => const FilePickerDialog(),
-                    // );
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const UploadFilesPage(),
-                        )).then((value) {
-                      setState(() {
-                        initValues();
-                      });
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainColor,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: const Text(
-                    "Add File",
-                    style: TextStyle(color: mainTextColor),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SharedFilesPage(),
-                        ));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainColor,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: const Text(
-                    "View Shared Files",
-                    style: TextStyle(color: mainTextColor),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RemindersPage(),
-                        ));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainColor,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: const Text(
-                    "View Reminders",
-                    style: TextStyle(color: mainTextColor),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -416,8 +352,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       buttonList.add(InkWell(
         onTap: () {
           ///guardar a categoria fav
-          categoryBoxService.saveFavoriteCategory(
-              authService.getCurrentUser().id, selectedCategory.id);
+          CategoryBoxService.saveFavoriteCategory(authService.getCurrentUser().id, selectedCategory.id);
           favoriteCategoryId = selectedCategory.id;
           setState(() {});
         },
@@ -429,8 +364,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     } else {
       buttonList.add(InkWell(
         onTap: () {
-          categoryBoxService.saveFavoriteCategory(
-              authService.getCurrentUser().id, 1);
+          CategoryBoxService.saveFavoriteCategory(authService.getCurrentUser().id, 1);
           favoriteCategoryId = 1;
           setState(() {});
         },
@@ -459,9 +393,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ).then((value) async {
             if (value != null) {
               selectedCategory.name = value;
-              (await categories)
-                  .firstWhere((element) => element.id == selectedCategory.id)
-                  .name = value;
+              (await categories).firstWhere((element) => element.id == selectedCategory.id).name = value;
               setState(() {});
             }
           });
@@ -483,14 +415,12 @@ class _HomePageState extends ConsumerState<HomePage> {
               context: context,
               builder: (BuildContext context) {
                 return CategoryDeleteModal(
-                    categories: Future.value(catValues),
-                    idCategoryToDelete: selectedCategory.id);
+                    categories: Future.value(catValues), idCategoryToDelete: selectedCategory.id);
               }).then((value) async {
             if (value != null) {
               (await categories).remove(selectedCategory);
               selectedCategory = (await categories).first;
-              categoryBoxService.saveFavoriteCategory(
-                  authService.getCurrentUser().id, 1);
+              CategoryBoxService.saveFavoriteCategory(authService.getCurrentUser().id, 1);
               favoriteCategoryId = 1;
               setState(() {});
             }
@@ -536,8 +466,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: Container(
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color:
-                        isShowingImages ? Colors.grey.shade200 : Colors.white,
+                    color: isShowingImages ? Colors.grey.shade200 : Colors.white,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Icon(
@@ -556,8 +485,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: Container(
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color:
-                        isShowingImages ? Colors.white : Colors.grey.shade200,
+                    color: isShowingImages ? Colors.white : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Icon(
@@ -588,9 +516,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
           List<ListTile> tiles = buildFilesListTiles(snapshot.data!);
 
-          return tiles.isEmpty
-              ? const Center(child: Text("No files found."))
-              : ListView(children: tiles);
+          return tiles.isEmpty ? const Center(child: Text("No files found.")) : ListView(children: tiles);
         }
       },
     );
@@ -631,8 +557,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: GestureDetector(
                 onTap: () async {
                   if (downloadedFiles.containsKey(files[i].name)) {
-                    navigateToFilePage(
-                        downloadedFiles[files[i].name]!, files[i]);
+                    navigateToFilePage(downloadedFiles[files[i].name]!, files[i]);
                     return;
                   }
 
@@ -640,10 +565,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Directory? directory;
                     directory = await getDownloadsDirectory();
                     final userId = authService.getCurrentUser().id;
-                    final targetDirPath =
-                        "${directory!.path}/$userId/${files[i].path.split("/").first}";
-                    final fileFullPath =
-                        "$targetDirPath/${files[i].path.split("/").last}";
+                    final targetDirPath = "${directory!.path}/$userId/${files[i].path.split("/").first}";
+                    final fileFullPath = "$targetDirPath/${files[i].path.split("/").last}";
                     final filePath = fileFullPath;
                     final downloadedFile = File(filePath);
                     if (await downloadedFile.exists()) {
@@ -692,8 +615,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   children: [
                     const Expanded(
                       flex: 1,
-                      child: Icon(Icons
-                          .image), //TODO : Colocar aqui a miniatura da imagem
+                      child: Icon(Icons.image), //TODO : Colocar aqui a miniatura da imagem
                     ),
                     Expanded(
                       flex: 3,
@@ -745,14 +667,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                            "Are you sure you want to delete this file?"),
+                        const Text("Are you sure you want to delete this file?"),
                         const SizedBox(height: 8),
                         ActionButtonsRow(
                           confirmText: 'Delete',
                           onConfirm: () async {
-                            final bool response =
-                            await fileService.deleteFile(fileSB);
+                            final bool response = await fileService.deleteFile(fileSB);
                             if (response) {
                               if (!context.mounted) return;
                               Navigator.of(context).pop();
@@ -765,8 +685,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             }
                             if (!context.mounted) return;
                             Navigator.of(context).pop();
-                            showCustomSnackBar(context,
-                                "An error occurred when deleting the file");
+                            showCustomSnackBar(context, "An error occurred when deleting the file");
                           },
                           onCancel: () => Navigator.of(context).pop(),
                         ),
@@ -780,8 +699,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       PopupMenuItem(
         child: const Text("Rename", style: TextStyle(color: Colors.black)),
         onTap: () {
-          renameController.text = fileSB.name
-              .substring(0, fileSB.name.length - fileSB.extension.length - 1);
+          renameController.text = fileSB.name.substring(0, fileSB.name.length - fileSB.extension.length - 1);
 
           showDialog(
               context: context,
@@ -806,8 +724,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           confirmText: 'Rename',
                           onConfirm: () async {
                             final bool response = await fileService.renameFile(
-                                fileSB,
-                                "${renameController.text.trim()}.${fileSB.extension}");
+                                fileSB, "${renameController.text.trim()}.${fileSB.extension}");
                             if (!context.mounted) return;
                             if (response) {
                               Navigator.of(context).pop();
@@ -819,8 +736,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               return;
                             }
                             Navigator.of(context).pop();
-                            showCustomSnackBar(context,
-                                "An error occurred when renaming the file");
+                            showCustomSnackBar(context, "An error occurred when renaming the file");
                           },
                           onCancel: () => Navigator.of(context).pop(),
                         ),
@@ -832,8 +748,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         },
       ),
       PopupMenuItem(
-        child: const Text("Change Expire Date",
-            style: TextStyle(color: Colors.black)),
+        child: const Text("Change Expire Date", style: TextStyle(color: Colors.black)),
         onTap: () async {
           showDialog(
               context: context,

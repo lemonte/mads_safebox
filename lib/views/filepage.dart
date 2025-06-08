@@ -208,7 +208,7 @@ class _FilePageState extends State<FilePage> {
                     child: Text(
                       "Your File",
                       style:
-                      TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

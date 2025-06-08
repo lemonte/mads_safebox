@@ -20,13 +20,13 @@ class CategoryBoxService {
     await Hive.openBox(categoryBoxKey);
   }
 
-  int getFavoriteCategory(String uid){
+  static int getFavoriteCategory(String uid){
     Box categoryBox = Hive.box(categoryBoxKey);
     debugPrint("fav category de $uid: ${categoryBox.get(uid, defaultValue: 1)}");
     return categoryBox.get(uid, defaultValue: 1);
   }
 
-  void saveFavoriteCategory(String uid, int categoryId) {
+  static void saveFavoriteCategory(String uid, int categoryId) {
     Box categoryBox = Hive.box(categoryBoxKey);
     categoryBox.put(uid, categoryId);
     debugPrint("fav category de $uid: ${categoryBox.get(uid, defaultValue: 1)}");

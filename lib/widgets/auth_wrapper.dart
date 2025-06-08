@@ -15,30 +15,30 @@ class AuthWrapper extends ConsumerStatefulWidget {
 }
 
 class _AuthWrapperState extends ConsumerState<AuthWrapper> {
-
   final AuthService auth = AuthService();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: StreamBuilder(
-        stream: Supabase.instance.client.auth.onAuthStateChange,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: Loading());
-          }
+      body: SafeArea(
+        top: false,
+        child: StreamBuilder(
+            stream: Supabase.instance.client.auth.onAuthStateChange,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: Loading());
+              }
 
-          final session = snapshot.hasData ? snapshot.data!.session : null;
+              final session = snapshot.hasData ? snapshot.data!.session : null;
 
-          if (session == null) {
-            return const LoginPage();
-          } else {
-            return const HomePage();
-          }
-        }
+              if (session == null) {
+                return const LoginPage();
+              } else {
+                return const HomePage();
+              }
+            }),
       ),
     );
   }
 }
-
