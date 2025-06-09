@@ -1,11 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
+import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/models/sharedplusfile.dart';
 import 'package:mads_safebox/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-
 
 import '../models/file.dart';
 
@@ -15,8 +16,12 @@ class FileService {
   final SupabaseClient supabaseClient = Supabase.instance.client;
   final AuthService authService = AuthService();
 
-  Future<void> uploadFile(
-      List<File> file, int? selectedCategoryId, DateTime? expiringDate) async {
+  Future<void> uploadFile(List<File> file, int? selectedCategoryId,
+      DateTime? expiringDate, DateTime? notificationDate) async {
+    if (expiringDate != null && expiringDate.isBefore(DateTime.now())) {
+      debugPrint('Error: Expiration date must be in the future.');
+      throw Exception('Expiration date must be in the future');
+    }
     try {
       await supabaseClient.storage
           .createBucket(authService.getCurrentUser().id);
@@ -30,7 +35,8 @@ class FileService {
     }
     for (var file in file) {
       try {
-        String uploadPath = '${DateTime.now().millisecondsSinceEpoch}/${file.path.split('/').last}';
+        String uploadPath =
+            '${DateTime.now().millisecondsSinceEpoch}/${file.path.split('/').last}';
         debugPrint("Upload path: $uploadPath");
 
         final response = await supabaseClient.storage
@@ -39,6 +45,10 @@ class FileService {
 
         debugPrint("File uploaded: $response");
 
+        var expireDateToSupabase =
+            DateFormat(dateFormatToSupabase).format(expiringDate ?? DateTime.now());
+        var notificationDateToSupabase =
+            DateFormat(dateFormatToSupabase).format(notificationDate ?? DateTime.now());
         await supabaseClient.from('files').insert({
           'uid': authService.getCurrentUser().id,
           'name': file.path.split('/').last,
@@ -46,6 +56,11 @@ class FileService {
           'size': file.lengthSync(),
           'path': uploadPath,
           'category_id': selectedCategoryId,
+          'expire_date':
+              expiringDate == null ? expiringDate : expireDateToSupabase,
+          'notification_date': notificationDate == null
+              ? notificationDate
+              : notificationDateToSupabase,
         });
       } catch (e) {
         debugPrint('Error uploading file: $e');
@@ -68,7 +83,7 @@ class FileService {
       final fileFullPath = "$targetDirPath/${fileSB.path.split("/").last}";
       final file = File(fileFullPath);
 
-      if(await file.exists()) {
+      if (await file.exists()) {
         await file.delete();
         Directory dir = Directory(targetDirPath);
         if (await dir.list().isEmpty) {
@@ -111,7 +126,8 @@ class FileService {
     try {
       final Uint8List response = await supabaseClient.storage
           .from(authService.getCurrentUser().id)
-          .download(path);//todo removi o transform porque dava erro com os pdfs
+          .download(
+              path); //todo removi o transform porque dava erro com os pdfs
 
       debugPrint("$path downloaded: ${response.lengthInBytes} bytes");
 
@@ -128,7 +144,6 @@ class FileService {
           await supabaseClient.storage.from(uid).download(path);
 
       debugPrint("File downloaded: ${response.lengthInBytes} bytes");
-
 
       return response;
     } catch (e) {
@@ -190,7 +205,8 @@ class FileService {
     }
   }
 
-  Future<List<SharedFileSB>> getSharedFiles(List<SharedFileSB> sharedFiles) async {
+  Future<List<SharedFileSB>> getSharedFiles(
+      List<SharedFileSB> sharedFiles) async {
     try {
       for (var sharedFile in sharedFiles) {
         final response = await supabaseClient
@@ -217,12 +233,50 @@ class FileService {
           await supabaseClient.from('files').select().eq('uid', uid);
 
       fileList.addAll(response.map((item) => FileSB.fromJson(item)).toList());
-
-
     } catch (e) {
-        debugPrint(e.toString());
-        rethrow;
+      debugPrint(e.toString());
+      rethrow;
     }
     return fileList;
+  }
+
+  Future<List<FileSB>> getExpiringFiles() async {
+    try {
+      final response = await supabaseClient
+          .from('files')
+          .select()
+          .eq('uid', authService.getCurrentUser().id)
+          .not('expire_date', 'is', null)
+          .order('expire_date', ascending: true)
+          .then((data) => (data as List)
+              .map((item) => FileSB.fromJson(item as Map<String, dynamic>))
+              .toList());
+      debugPrint("Expiring files fetched: ${response.length} files");
+      return response;
+    } catch (e) {
+      debugPrint('Error fetching shared files: $e');
+
+      return [];
+    }
+  }
+
+  Future<void> changeFileExpireDate(
+      int fileId, DateTime? newExpireDate, DateTime? notificationDate) async {
+    try {
+      var expireDateToSupabase =
+          DateFormat(dateFormatToSupabase).format(newExpireDate ?? DateTime.now());
+      var notificationDateToSupabase =
+          DateFormat(dateFormatToSupabase).format(notificationDate ?? DateTime.now());
+
+      await supabaseClient.from('files').update({
+        'expire_date':
+            newExpireDate == null ? newExpireDate : expireDateToSupabase,
+        'notification_date': notificationDate == null
+            ? notificationDate
+            : notificationDateToSupabase,
+      }).eq('id', fileId);
+    } catch (e) {
+      debugPrint('Error changing file expiration date: $e');
+    }
   }
 }
