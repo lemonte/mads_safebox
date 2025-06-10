@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/services/category_box_service.dart';
 import 'package:mads_safebox/services/category_service.dart';
+import 'package:mads_safebox/services/firebase_messaging.dart';
 import 'package:mads_safebox/views/filepage.dart';
 import 'package:mads_safebox/views/reminderspage.dart';
 import 'package:mads_safebox/views/sharedfilespage.dart';
@@ -60,6 +61,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     initValues();
     initAsyncValues();
+
+    updateFCMToken(authService.getCurrentUser());
 
     categories.then((value) {
       setState(() {

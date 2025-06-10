@@ -115,6 +115,8 @@ class FileService {
       await supabaseClient
           .from('shared')
           .update({"path": newPath}).eq("file_id", fileSB.id);
+
+
       return true;
     } catch (e) {
       debugPrint("\nError when renaming file:\n$e\n");
@@ -127,7 +129,7 @@ class FileService {
       final Uint8List response = await supabaseClient.storage
           .from(authService.getCurrentUser().id)
           .download(
-              path); //todo removi o transform porque dava erro com os pdfs
+              path);
 
       debugPrint("$path downloaded: ${response.lengthInBytes} bytes");
 
@@ -274,6 +276,7 @@ class FileService {
         'notification_date': notificationDate == null
             ? notificationDate
             : notificationDateToSupabase,
+        'isNotified': false,
       }).eq('id', fileId);
     } catch (e) {
       debugPrint('Error changing file expiration date: $e');
