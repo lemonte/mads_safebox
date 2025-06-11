@@ -20,6 +20,7 @@ import '../models/category.dart';
 import '../models/file.dart';
 import '../services/auth_service.dart';
 import '../services/file_service.dart';
+import '../services/firebase_messaging.dart';
 import '../widgets/actionbuttonsrow.dart';
 import '../services/user_box_service.dart';
 import '../widgets/category/category_dropdownbutton.dart';
@@ -60,6 +61,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     initValues();
     initAsyncValues();
+
+    updateFCMToken(authService.getCurrentUser());
 
     categories.then((value) {
       setState(() {

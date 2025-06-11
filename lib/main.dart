@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/config/env_config.dart';
 import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/services/category_box_service.dart';
+import 'package:mads_safebox/services/firebase_messaging.dart';
 import 'package:mads_safebox/services/user_box_service.dart';
 import 'package:mads_safebox/services/workmanager.dart';
 import 'package:mads_safebox/widgets/auth_wrapper.dart';
@@ -68,6 +69,7 @@ void main() async {
   await UserBoxService.init();
   await CategoryBoxService.init();
   await Permission.notification.request();
+  await initFirebaseMessaging();
 
   runApp(const ProviderScope(child: MyApp()));
 }
