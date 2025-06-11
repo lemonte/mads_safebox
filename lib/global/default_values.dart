@@ -23,6 +23,48 @@ const autoSyncNotificationDetails = NotificationDetails(
   ),
 );
 
+const fcmNotificationDetails = NotificationDetails(
+  android: AndroidNotificationDetails(
+    "SafeBoxFCM",      //channel ID
+    'SafeBox FCM Notifications Channel',    //channel name
+    importance: Importance.high,
+    priority: Priority.max,
+    playSound: true,
+    icon: '@mipmap/launcher_icon',
+  ),
+);
+
 //WorkManager Keys
 const String keyWorkManagerAutoSync = "autoSyncSafeBox";
 const String taskWorkManagerAutoSync = "autoSyncSafeBoxTask";
+
+Future<FlutterLocalNotificationsPlugin> initNotificationsPlugin() async {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+
+  const initializationSettingsAndroid =
+  AndroidInitializationSettings('@mipmap/launcher_icon');
+  const initializationSettingsIOS = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+
+  const initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsIOS,
+  );
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    /*
+    onDidReceiveNotificationResponse: (NotificationResponse response) async {
+      final filePath = response.payload;
+      if (filePath != null) {
+        OpenFile.open(filePath);
+      }
+    },
+     */
+  );
+
+  return flutterLocalNotificationsPlugin;
+}

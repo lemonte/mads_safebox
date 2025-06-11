@@ -274,6 +274,7 @@ class FileService {
         'notification_date': notificationDate == null
             ? notificationDate
             : notificationDateToSupabase,
+        'isNotified': false,
       }).eq('id', fileId);
     } catch (e) {
       debugPrint('Error changing file expiration date: $e');
