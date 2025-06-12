@@ -1,0 +1,52 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Flutter (Development)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define=SUPABASE_URL=https://oqrofriuigqbzgqtsuiu.supabase.co",
+                "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcm9mcml1aWdxYnpncXRzdWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4NjY0NjEsImV4cCI6MjA2MjQ0MjQ2MX0.caIytdT2BVFoatT2HlHLN2QZeLYfKSzqG2x_g0le3cM",
+                "--dart-define=GOOGLE_CLIENT_ID=270946605394-d49f4djvpau1a7e27bl9o23gs90dkqr7.apps.googleusercontent.com",
+                "--dart-define=IOS_CLIENT_ID=270946605394-6idoqgfnip0bojj9r6k388k08p7fs2vg.apps.googleusercontent.com",
+                "--dart-define=PUBLIC_KEY=safebox_public_key_safebox",
+                "--dart-define=PRIVATE_KEY=safebox_private_key_safebox",
+                "--dart-define=IV_KEY=iv2025789safebox"
+            ]
+        },
+        {
+            "name": "Launch Flutter (Profile)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "args": [
+                "--dart-define=SUPABASE_URL=https://oqrofriuigqbzgqtsuiu.supabase.co",
+                "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcm9mcml1aWdxYnpncXRzdWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4NjY0NjEsImV4cCI6MjA2MjQ0MjQ2MX0.caIytdT2BVFoatT2HlHLN2QZeLYfKSzqG2x_g0le3cM",
+                "--dart-define=GOOGLE_CLIENT_ID=270946605394-d49f4djvpau1a7e27bl9o23gs90dkqr7.apps.googleusercontent.com",
+                "--dart-define=IOS_CLIENT_ID=270946605394-6idoqgfnip0bojj9r6k388k08p7fs2vg.apps.googleusercontent.com",
+                "--dart-define=PUBLIC_KEY=safebox_public_key_safebox",
+                "--dart-define=PRIVATE_KEY=safebox_private_key_safebox",
+                "--dart-define=IV_KEY=iv2025789safebox"
+            ]
+        },
+        {
+            "name": "Launch Flutter (Release)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "release",
+            "args": [
+                "--dart-define=SUPABASE_URL=https://oqrofriuigqbzgqtsuiu.supabase.co",
+                "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcm9mcml1aWdxYnpncXRzdWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4NjY0NjEsImV4cCI6MjA2MjQ0MjQ2MX0.caIytdT2BVFoatT2HlHLN2QZeLYfKSzqG2x_g0le3cM",
+                "--dart-define=GOOGLE_CLIENT_ID=270946605394-d49f4djvpau1a7e27bl9o23gs90dkqr7.apps.googleusercontent.com",
+                "--dart-define=IOS_CLIENT_ID=270946605394-6idoqgfnip0bojj9r6k388k08p7fs2vg.apps.googleusercontent.com",
+                "--dart-define=PUBLIC_KEY=safebox_public_key_safebox",
+                "--dart-define=PRIVATE_KEY=safebox_private_key_safebox",
+                "--dart-define=IV_KEY=iv2025789safebox"
+            ]
+        }
+    ]
+} 

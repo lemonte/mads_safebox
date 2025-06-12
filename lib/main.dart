@@ -1,7 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mads_safebox/config/env_config.dart';
+import 'package:mads_safebox/firebase_options.dart';
 import 'package:mads_safebox/global/default_values.dart';
 import 'package:mads_safebox/services/category_box_service.dart';
 import 'package:mads_safebox/services/firebase_messaging.dart';
@@ -13,64 +15,70 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+Future<void> initialize() async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await EnvConfig().initialize();
+
+    await Supabase.initialize(
+      url: EnvConfig().supabaseUrl,
+      anonKey: EnvConfig().supabaseAnonKey,
+    );
+
+    const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/launcher_icon');
+    const initializationSettingsIOS = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        final filePath = response.payload;
+        if (filePath != null) {
+          OpenFile.open(filePath);
+        }
+      },
+    );
+
+    Workmanager().initialize(
+      callbackDispatcher,
+      //isInDebugMode: true,
+      // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+    );
+
+    Workmanager().registerPeriodicTask(
+      keyWorkManagerAutoSync,
+      taskWorkManagerAutoSync,
+      frequency: durationSyncRetry,
+      //initialDelay: const Duration(seconds: 30),
+      constraints: Constraints(
+        networkType: NetworkType.connected,
+        //requiresDeviceIdle: true,
+      ),
+    );
+
+    await UserBoxService.init();
+    await CategoryBoxService.init();
+    await Permission.notification.request();
+    await initFirebaseMessaging();
+  } catch (e) {
+    debugPrint("Error initializing: $e");
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await EnvConfig().initialize();
-
-  await Supabase.initialize(
-    url: EnvConfig().supabaseUrl,
-    anonKey: EnvConfig().supabaseAnonKey,
-  );
-
-  const initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/launcher_icon');
-  const initializationSettingsIOS = DarwinInitializationSettings(
-    requestAlertPermission: true,
-    requestBadgePermission: true,
-    requestSoundPermission: true,
-  );
-
-  const initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: initializationSettingsIOS,
-  );
-  await flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse response) async {
-      final filePath = response.payload;
-      if (filePath != null) {
-        OpenFile.open(filePath);
-      }
-    },
-  );
-
-
-  Workmanager().initialize(
-    callbackDispatcher,
-    //isInDebugMode: true,
-    // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-  );
-
-  Workmanager().registerPeriodicTask(
-    keyWorkManagerAutoSync,
-    taskWorkManagerAutoSync,
-    frequency: durationSyncRetry,
-    //initialDelay: const Duration(seconds: 30),
-    constraints: Constraints(
-      networkType: NetworkType.connected,
-      //requiresDeviceIdle: true,
-    ),
-  );
-
-  await UserBoxService.init();
-  await CategoryBoxService.init();
-  await Permission.notification.request();
-  await initFirebaseMessaging();
-
+  await initialize();
   runApp(const ProviderScope(child: MyApp()));
 }
 

@@ -53,23 +53,58 @@ class AuthService {
 
   Future<void> nativeGoogleSignIn() async {
     try {
-      final EnvConfig config = EnvConfig();
-      config.checkInitialized();
+      debugPrint("Iniciando Google Sign-In...");
 
-      final GoogleSignIn googleSignIn = GoogleSignIn(serverClientId: config.googleClientId);
+      final EnvConfig config = EnvConfig();
+
+      try {
+        config.checkInitialized();
+        debugPrint("EnvConfig inicializado com sucesso");
+      } catch (e) {
+        debugPrint("ERRO: EnvConfig não inicializado: $e");
+        throw Exception("Configuração de ambiente não encontrada: $e");
+      }
+
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: config.googleClientId, // Web Client ID para Supabase
+        clientId: config.iosClientId, // iOS Client ID para o redirect
+      );
+      debugPrint("GoogleSignIn criado com serverClientId: ${config.googleClientId}");
+      debugPrint("GoogleSignIn criado com clientId: ${config.iosClientId}");
 
       // Sign out from any previous session
       await googleSignIn.signOut();
+      debugPrint("Sign out anterior realizado");
 
-      final googleUser = await googleSignIn.signIn();
+      debugPrint("Iniciando processo de sign in...");
+      final googleUser;
+      try {
+        googleUser = await googleSignIn.signIn().timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            debugPrint("TIMEOUT: Google Sign-In demorou mais de 30 segundos");
+            return null;
+          },
+        );
+        debugPrint("Resultado do signIn: $googleUser");
+      } catch (signInError) {
+        debugPrint("ERRO específico no signIn: $signInError");
+        debugPrint("Tipo do erro: ${signInError.runtimeType}");
+        rethrow;
+      }
 
       if (googleUser == null) {
+        debugPrint("Google sign-in foi cancelado pelo usuário");
         throw Exception('Google sign-in was canceled');
       }
 
+      debugPrint("Obtendo credenciais de autenticação...");
       final googleAuth = await googleUser.authentication;
       final accessToken = googleAuth.accessToken;
       final idToken = googleAuth.idToken;
+
+      debugPrint("AccessToken: ${accessToken != null ? 'Presente' : 'Ausente'}");
+      debugPrint("IdToken: ${idToken != null ? 'Presente' : 'Ausente'}");
 
       if (accessToken == null) {
         throw 'No Access Token found.';
@@ -78,21 +113,26 @@ class AuthService {
         throw 'No ID Token found.';
       }
 
+      debugPrint("Realizando sign in com Supabase...");
       await supabaseClient.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
         accessToken: accessToken,
       );
 
+      debugPrint("Sign in com Supabase realizado com sucesso");
       UserSB user = getCurrentUser();
+      debugPrint("Usuário atual obtido: ${user.nome}");
 
       try {
         await supabaseClient.from('users').upsert({'id': user.id, 'name': user.nome}, onConflict: 'id');
+        debugPrint("Usuário inserido/atualizado no banco de dados");
       } on Exception catch (e) {
         debugPrint("Error inserting user: $e");
       }
     } catch (e) {
       debugPrint("Google Sign-In Error: $e");
+      debugPrint("Stack trace: ${e.toString()}");
       rethrow;
     }
   }
