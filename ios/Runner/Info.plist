@@ -43,7 +43,22 @@
             <array>
               <string>safebox</string> <!-- ou outro esquema -->
             </array>
-          </dict>
+        </dict>
+        <dict>
+            <key>CFBundleURLTypes</key>
+            <array>
+                <dict>
+                    <key>CFBundleURLSchemes</key>
+                    <array>
+                        <string>fb550441511443908</string>
+                    </array>
+                </dict>
+            </array>
+            <key>FacebookAppID</key>
+            <string>550441511443908</string>
+            <key>FacebookDisplayName</key>
+            <string>Safebox</string>
+        </dict>
     </array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
