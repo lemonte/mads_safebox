@@ -616,9 +616,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       flex: 1,
-                      child: Icon(Icons.image), //TODO : Colocar aqui a miniatura da imagem
+                      child: isShowingImages
+                          ? const Icon(Icons.image)
+                          : const Icon(Icons
+                          .insert_drive_file),
                     ),
                     Expanded(
                       flex: 3,
