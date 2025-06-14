@@ -73,6 +73,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIBackgroundModes</key>
+    <array>
+      <string>fetch</string>
+      <string>processing</string>
+    </array>
 	<key>NSPhotoLibraryUsageDescription</key>
     <string>We need access to your photo library to select files.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
