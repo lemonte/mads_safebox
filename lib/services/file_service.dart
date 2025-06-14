@@ -115,6 +115,12 @@ class FileService {
       await supabaseClient
           .from('shared')
           .update({"path": newPath}).eq("file_id", fileSB.id);
+      final directory = await getDownloadsDirectory();
+      final userId = authService.getCurrentUser().id;
+      File file = File('${directory?.path}/$userId/${fileSB.path}');
+      if (await file.exists()){
+        file.rename('${directory?.path}/$userId/$newPath');
+      }
       return true;
     } catch (e) {
       debugPrint("\nError when renaming file:\n$e\n");

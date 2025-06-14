@@ -1,14 +1,12 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:mads_safebox/widgets/fileuploadsettingsmodal.dart';
 
-
 import '../services/file_service.dart';
 import '../widgets/custom_snack_bar.dart';
-
-
 
 class UploadFilesPage extends StatefulWidget {
   const UploadFilesPage({super.key});
@@ -35,6 +33,17 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
     }
   }
 
+  Future<void> pickPhotosIOS() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> images = await picker.pickMultiImage();
+
+    if (images.isNotEmpty) {
+      setState(() {
+        selectedFiles = images.map((xfile) => File(xfile.path)).toList();
+      });
+    }
+  }
+
   void clearFiles() {
     setState(() {
       selectedFiles = [];
@@ -55,9 +64,9 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
           child: ext == 'pdf'
               ? const Icon(Icons.picture_as_pdf, size: 50, color: Colors.red)
               : ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(file, fit: BoxFit.cover),
-          ),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(file, fit: BoxFit.cover),
+                ),
         ),
         const SizedBox(height: 4),
         SizedBox(
@@ -79,81 +88,98 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
     return Scaffold(
       appBar: buildCustomAppBar(true),
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          children: [
-            const Text("Upload", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            Divider(thickness: 1, color: Colors.grey.shade300),
-            const SizedBox(height: 8),
-            Expanded(
-              child: selectedFiles.isEmpty
-                  ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.insert_drive_file, size: 80, color: Colors.grey),
-                    SizedBox(height: 8),
-                    Text("Nenhum ficheiro selecionado"),
-                  ],
-                ),
-              )
-                  : GridView.builder(
-                itemCount: selectedFiles.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.9,
-                ),
-                itemBuilder: (context, index) {
-                  return buildPreview(selectedFiles[index]);
-                },
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            children: [
+              const Text("Upload", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Divider(thickness: 1, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Expanded(
+                child: selectedFiles.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.insert_drive_file, size: 80, color: Colors.grey),
+                            SizedBox(height: 8),
+                            Text("Nenhum ficheiro selecionado"),
+                          ],
+                        ),
+                      )
+                    : GridView.builder(
+                        itemCount: selectedFiles.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.9,
+                        ),
+                        itemBuilder: (context, index) {
+                          return buildPreview(selectedFiles[index]);
+                        },
+                      ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: pickFiles,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade300,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+              const SizedBox(height: 12),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: pickFiles,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade300,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: const Text("Upload From Files"),
                   ),
-                  child: const Text("Upload From Library"),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (selectedFiles.isEmpty) {
-                      showCustomSnackBar(context, 'Please select files first');
-                      return;
-                    }
-                    showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-
-                          return FileUploadSettingsModal(selectedFiles: selectedFiles);
-                        }
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade300,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                  const SizedBox(height: 12),
+                  Visibility(
+                    visible: Platform.isIOS,
+                    child: ElevatedButton(
+                      onPressed: pickPhotosIOS,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: const Text("Upload From Photos"),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                   ),
-                  child: const Text("Next"),
-                ),
-              ],
-            )
-          ],
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (selectedFiles.isEmpty) {
+                        showCustomSnackBar(context, 'Please select files first');
+                        return;
+                      }
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return FileUploadSettingsModal(selectedFiles: selectedFiles);
+                          });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade300,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                    ),
+                    child: const Text("Next"),
+                  ),
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
