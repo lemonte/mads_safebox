@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SafeBox</string>
+    <string name="facebook_app_id">550441511443908</string>
+    <string name="fb_login_protocol_scheme">fb550441511443908</string>
+</resources> 
