@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mads_safebox/widgets/custom_appbar.dart';
 import 'package:mads_safebox/widgets/fileuploadsettingsmodal.dart';
 
@@ -31,6 +32,17 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
     if (result != null) {
       setState(() {
         selectedFiles = result.paths.map((path) => File(path!)).toList();
+      });
+    }
+  }
+
+  Future<void> pickPhotosIOS() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> images = await picker.pickMultiImage();
+
+    if (images.isNotEmpty) {
+      setState(() {
+        selectedFiles = images.map((xfile) => File(xfile.path)).toList();
       });
     }
   }
@@ -115,6 +127,7 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                !Platform.isIOS ?
                 ElevatedButton(
                   onPressed: pickFiles,
                   style: ElevatedButton.styleFrom(
@@ -126,6 +139,33 @@ class _UploadFilesPageState extends State<UploadFilesPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
                   child: const Text("Upload From Library"),
+                ) : Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: pickFiles,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: const Text("Upload From Files"),
+                    ),
+                    ElevatedButton(
+                      onPressed: pickPhotosIOS,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: const Text("Upload From Photos"),
+                    ),
+                  ],
                 ),
                 ElevatedButton(
                   onPressed: () {
