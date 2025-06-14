@@ -77,7 +77,7 @@ class AuthService {
       debugPrint("Sign out anterior realizado");
 
       debugPrint("Iniciando processo de sign in...");
-      final googleUser;
+      GoogleSignInAccount? googleUser;
       try {
         googleUser = await googleSignIn.signIn().timeout(
           const Duration(seconds: 30),
